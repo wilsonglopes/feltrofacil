@@ -12,7 +12,6 @@
     <style>
         body { font-family: 'Quicksand', sans-serif; background-color: #fcf7fd; }
         .text-brand { color: #660066; }
-        /* Modal */
         #checkout-modal { transition: opacity 0.3s ease; }
         #checkout-modal.hidden { opacity: 0; pointer-events: none; }
         #checkout-modal.flex { opacity: 1; pointer-events: auto; }
@@ -65,6 +64,10 @@
                     <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-[#660066] border-t-transparent"></div>
                     <p class="mt-4 text-gray-600 font-medium">Iniciando pagamento seguro...</p>
                 </div>
+
+                <div id="checking-payment" class="hidden text-center mt-4 p-3 bg-purple-50 text-purple-700 text-sm rounded border border-purple-100 animate-pulse">
+                    Aguardando confirmação do banco...
+                </div>
             </div>
         </div>
     </div>
@@ -80,6 +83,7 @@
         const mp = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
         let bricksBuilder = mp.bricks();
         let currentBrickController = null;
+        let paymentCheckInterval = null;
 
         async function loadProducts() {
             const grid = document.getElementById('products-grid');
@@ -109,14 +113,16 @@
             const container = document.getElementById('paymentBrick_container');
             const loading = document.getElementById('modal-loading');
 
-            if (currentBrickController) currentBrickController.unmount(); // Garante limpar o anterior corretamente
+            if (currentBrickController) currentBrickController.unmount();
+            if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+
             container.innerHTML = ''; 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             loading.classList.remove('hidden');
+            document.getElementById('checking-payment').classList.add('hidden');
 
             try {
-                // 1. Cria a Preferência no Backend
                 const response = await fetch('/.netlify/functions/create-checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -126,7 +132,6 @@
                 const data = await response.json();
                 if (!data.preferenceId) throw new Error(data.error || 'Erro ao iniciar.');
 
-                // 2. Configura o Brick de Pagamento
                 const settings = {
                     initialization: {
                         preferenceId: data.preferenceId,
@@ -143,31 +148,26 @@
                         visual: {
                             style: {
                                 theme: 'default',
-                                customVariables: {
-                                    formBackgroundColor: '#ffffff',
-                                    baseColor: '#660066'
-                                }
+                                customVariables: { formBackgroundColor: '#ffffff', baseColor: '#660066' }
                             }
                         }
                     },
                     callbacks: {
                         onReady: () => { loading.classList.add('hidden'); },
                         onSubmit: ({ selectedPaymentMethod, formData }) => {
-                            // 3. Processa o Pagamento quando clica no botão
                             return new Promise((resolve, reject) => {
                                 fetch('/.netlify/functions/process-payment', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    // >>> AQUI ESTAVA O ERRO <<<
-                                    // Antes: body: JSON.stringify(formData)
-                                    // Agora (Corrigido): Enviamos o formData E o productId
                                     body: JSON.stringify({ formData, productId }) 
                                 })
                                 .then((response) => response.json())
                                 .then((response) => {
                                     if (response.id) {
                                         resolve();
-                                        showStatusScreen(response.id); 
+                                        showStatusScreen(response.id);
+                                        // Inicia o Detetive
+                                        monitorPayment(response.id);
                                     } else {
                                         reject();
                                         alert("Erro no pagamento: " + (response.error || 'Tente novamente.'));
@@ -199,22 +199,64 @@
             container.innerHTML = ''; 
 
             const settings = {
-                initialization: {
-                    paymentId: paymentId, 
-                },
+                initialization: { paymentId: paymentId },
                 callbacks: {
-                    onReady: () => {},
+                    onReady: () => {
+                        // Avisa o usuário que estamos olhando
+                        document.getElementById('checking-payment').classList.remove('hidden');
+                    },
                     onError: (error) => { console.error(error); },
                 },
             };
-            
             currentBrickController = await bricksBuilder.create('statusScreen', 'paymentBrick_container', settings);
+        }
+
+        // --- DETETIVE DE PAGAMENTO COM TRAVA DE 15 MIN ---
+        function monitorPayment(paymentId) {
+            console.log("Iniciando monitoramento:", paymentId);
+            let attempts = 0;
+            const maxAttempts = 300; // 300 tentativas * 3 segundos = 900s (15 minutos)
+            
+            paymentCheckInterval = setInterval(async () => {
+                attempts++;
+                
+                // Trava de Segurança: Para depois de 15 min
+                if (attempts > maxAttempts) {
+                    clearInterval(paymentCheckInterval);
+                    document.getElementById('checking-payment').innerText = "Tempo limite atingido. Verifique seu e-mail.";
+                    return;
+                }
+
+                // Pergunta ao Supabase
+                const { data, error } = await supabaseClient
+                    .from('sales')
+                    .select('id, status')
+                    .eq('payment_id', String(paymentId))
+                    .maybeSingle();
+
+                if (data) {
+                    // SUCESSO!
+                    console.log("Pagamento compensado!", data);
+                    clearInterval(paymentCheckInterval);
+                    
+                    // Pequeno delay para o usuário ver que deu certo antes de redirecionar
+                    document.getElementById('checking-payment').innerText = "Pagamento Confirmado! Redirecionando...";
+                    document.getElementById('checking-payment').className = "text-center mt-4 p-3 bg-green-50 text-green-700 font-bold rounded border border-green-200";
+                    
+                    setTimeout(() => {
+                        window.location.href = 'sucesso.html'; 
+                    }, 1500);
+                }
+            }, 3000); // Pergunta a cada 3 segundos
         }
 
         function closeModal() {
             const modal = document.getElementById('checkout-modal');
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+            
+            if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+            
             if (currentBrickController) {
                 currentBrickController.unmount();
                 currentBrickController = null;
