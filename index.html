@@ -9,15 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* Ajustei o fundo para um tom muito suave de roxo/branco para combinar */
         body { font-family: 'Quicksand', sans-serif; background-color: #fcf7fd; }
         .btn-loading { opacity: 0.7; pointer-events: none; cursor: wait; }
-        
-        /* Cor Personalizada da Feltro Fácil */
         .text-brand { color: #660066; }
         .bg-brand { background-color: #660066; }
-        .bg-brand-hover:hover { background-color: #4d004d; } /* Um tom um pouco mais escuro para o hover */
-        .border-brand { border-color: #660066; }
+        .bg-brand-hover:hover { background-color: #4d004d; }
     </style>
 </head>
 <body class="text-stone-700">
@@ -38,7 +34,6 @@
     <main class="container mx-auto px-4 py-12 min-h-screen">
         <div class="text-center max-w-3xl mx-auto mb-16">
             <h2 class="text-4xl font-bold mb-4 text-[#660066]">Apostilas Feltro Fácil</h2>
-            
             <p class="text-lg text-stone-600">
                 Acesso imediato! Comprando agora, você recebe os moldes e o passo a passo diretamente no seu e-mail.
             </p>
@@ -95,7 +90,7 @@
                     
                     <div class="p-6 flex-1 flex flex-col">
                         <h3 class="font-bold text-xl mb-2 text-stone-800">${product.title}</h3>
-                        <p class="text-stone-500 text-sm mb-6 flex-1 line-clamp-3">${product.description || 'Apostila digital em PDF com moldes em tamanho natural e passo a passo detalhado.'}</p>
+                        <p class="text-stone-500 text-sm mb-6 flex-1 line-clamp-3">${product.description || 'Apostila digital em PDF.'}</p>
                         
                         <div class="mt-auto pt-4 border-t border-gray-50 flex items-center justify-between">
                             <div>
@@ -114,27 +109,43 @@
 
         async function buyProduct(productId, btnElement) {
             const originalText = btnElement.innerText;
+            
+            // Debug: Vamos ver no console se o ID está chegando aqui
+            console.log("Tentando comprar Produto ID:", productId);
+
+            if (!productId) {
+                alert("Erro: ID do produto inválido.");
+                return;
+            }
+
             btnElement.innerText = "Aguarde...";
             btnElement.classList.add('btn-loading');
             
             try {
+                // CORREÇÃO CRÍTICA AQUI: Adicionamos o 'headers'
                 const response = await fetch('/.netlify/functions/create-checkout', {
                     method: 'POST',
-                    body: JSON.stringify({ productId })
+                    headers: {
+                        'Content-Type': 'application/json' // <--- ISSO FALTAVA!
+                    },
+                    body: JSON.stringify({ productId: productId })
                 });
                 
                 const data = await response.json();
                 
+                if (!response.ok) {
+                    throw new Error(data.error || 'Erro desconhecido no servidor');
+                }
+                
                 if (data.init_point) {
                     window.location.href = data.init_point;
                 } else {
-                    alert('Erro ao iniciar pagamento.');
-                    btnElement.innerText = originalText;
-                    btnElement.classList.remove('btn-loading');
+                    throw new Error('Link de pagamento não gerado.');
                 }
+
             } catch (err) {
-                console.error(err);
-                alert('Erro de conexão.');
+                console.error('Erro detalhado:', err);
+                alert('Erro ao iniciar pagamento: ' + err.message);
                 btnElement.innerText = originalText;
                 btnElement.classList.remove('btn-loading');
             }
