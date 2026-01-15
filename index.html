@@ -109,7 +109,8 @@
             const container = document.getElementById('paymentBrick_container');
             const loading = document.getElementById('modal-loading');
 
-            container.innerHTML = ''; // Limpa anterior
+            if (currentBrickController) currentBrickController.unmount(); // Garante limpar o anterior corretamente
+            container.innerHTML = ''; 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             loading.classList.remove('hidden');
@@ -141,10 +142,10 @@
                         },
                         visual: {
                             style: {
-                                theme: 'default', // ou 'dark'
+                                theme: 'default',
                                 customVariables: {
                                     formBackgroundColor: '#ffffff',
-                                    baseColor: '#660066' // Cor da Feltro Fácil
+                                    baseColor: '#660066'
                                 }
                             }
                         }
@@ -157,11 +158,13 @@
                                 fetch('/.netlify/functions/process-payment', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify(formData)
+                                    // >>> AQUI ESTAVA O ERRO <<<
+                                    // Antes: body: JSON.stringify(formData)
+                                    // Agora (Corrigido): Enviamos o formData E o productId
+                                    body: JSON.stringify({ formData, productId }) 
                                 })
                                 .then((response) => response.json())
                                 .then((response) => {
-                                    // Se deu certo, mostra a tela de STATUS (QR Code ou Sucesso)
                                     if (response.id) {
                                         resolve();
                                         showStatusScreen(response.id); 
@@ -192,22 +195,16 @@
 
         async function showStatusScreen(paymentId) {
             const container = document.getElementById('paymentBrick_container');
-            // Desmonta o formulário de pagamento
             if (currentBrickController) currentBrickController.unmount();
-            container.innerHTML = ''; // Garante limpeza
+            container.innerHTML = ''; 
 
-            // Cria o Brick de Status (Mostra QR Code do PIX ou Confirmação)
             const settings = {
                 initialization: {
                     paymentId: paymentId, 
                 },
                 callbacks: {
-                    onReady: () => {
-                        // Tela carregou
-                    },
-                    onError: (error) => {
-                        console.error(error);
-                    },
+                    onReady: () => {},
+                    onError: (error) => { console.error(error); },
                 },
             };
             
@@ -215,8 +212,9 @@
         }
 
         function closeModal() {
-            document.getElementById('checkout-modal').classList.add('hidden');
-            document.getElementById('checkout-modal').classList.remove('flex');
+            const modal = document.getElementById('checkout-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
             if (currentBrickController) {
                 currentBrickController.unmount();
                 currentBrickController = null;
