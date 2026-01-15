@@ -22,6 +22,7 @@ exports.handler = async function(event, context) {
     if (!event.body) throw new Error('Nenhum dado recebido.');
     const { productId } = JSON.parse(event.body);
 
+    // Busca o produto
     const { data: product, error } = await supabase
       .from('products')
       .select('*')
@@ -42,7 +43,7 @@ exports.handler = async function(event, context) {
           }
         ],
         external_reference: product.id,
-        payer: { email: "cliente@email.com" }, // O cliente preenche o real no formulário transparente
+        payer: { email: "cliente@email.com" },
         back_urls: {
           success: "https://loja.feltrofacil.com.br/sucesso.html",
           failure: "https://loja.feltrofacil.com.br/",
@@ -56,8 +57,11 @@ exports.handler = async function(event, context) {
     return {
       statusCode: 200,
       headers,
-      // MUDANÇA AQUI: Retornamos o ID para o Brick usar
-      body: JSON.stringify({ preferenceId: preferenceData.id }),
+      // MUDANÇA AQUI: Agora enviamos o PREÇO (amount) de volta para o site
+      body: JSON.stringify({ 
+          preferenceId: preferenceData.id, 
+          amount: Number(product.price) 
+      }),
     };
 
   } catch (error) {
