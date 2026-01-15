@@ -1,8 +1,8 @@
 const { createClient } = require('@supabase/supabase-js');
 const { MercadoPagoConfig, Preference } = require('mercadopago');
 
-exports.handler = async function(event) {
-  // Cabeçalhos para permitir que o seu site converse com essa função (CORS)
+exports.handler = async function(event, context) {
+  // Cabeçalhos para evitar erros de CORS no navegador
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -13,28 +13,29 @@ exports.handler = async function(event) {
     return { statusCode: 200, headers, body: '' };
   }
 
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
-
   try {
-    // 1. Configuração
+    // 1. Configuração Inicial
+    // ATENÇÃO: Verifique se essas variáveis estão no Netlify
+    if (!process.env.MP_ACCESS_TOKEN || !process.env.SUPABASE_URL) {
+        throw new Error('Variáveis de ambiente não configuradas (MP_ACCESS_TOKEN ou SUPABASE).');
+    }
+
     const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
     const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
     const preference = new Preference(client);
 
     const { productId } = JSON.parse(event.body);
 
-    // 2. Buscar produto no banco para garantir o preço correto
+    // 2. Buscar dados do produto no banco (Segurança: pegar preço real)
     const { data: product, error } = await supabase
       .from('products')
       .select('*')
       .eq('id', productId)
       .single();
 
-    if (error || !product) throw new Error('Produto não encontrado.');
+    if (error || !product) throw new Error('Produto não encontrado no banco de dados.');
 
-    // 3. Criar a preferência de pagamento
+    // 3. Criar a Preferência no Mercado Pago
     const preferenceData = await preference.create({
       body: {
         items: [
@@ -45,16 +46,19 @@ exports.handler = async function(event) {
             currency_id: 'BRL'
           }
         ],
-        external_reference: product.id, // ID do produto para sabermos o que entregar
+        // ID do produto vai aqui para sabermos o que entregar depois
+        external_reference: product.id, 
         payer: {
-            email: "test_user_123@testuser.com" // O MP pede um email dummy se não tiver login, o usuário preenche no checkout real
+            // O MP exige um email válido em produção, ou pede para o cliente preencher lá
+            email: "cliente@email.com" 
         },
         back_urls: {
-          success: "https://loja.feltrofacil.com.br/sucesso.html",
+          success: "https://loja.feltrofacil.com.br/sucesso.html", // Vamos criar essa página jájá
           failure: "https://loja.feltrofacil.com.br/",
           pending: "https://loja.feltrofacil.com.br/"
         },
         auto_return: "approved",
+        // AQUI ESTÁ A MÁGICA: O MP avisa este link quando pagarem
         notification_url: "https://loja.feltrofacil.com.br/.netlify/functions/webhook-delivery"
       }
     });
@@ -66,11 +70,11 @@ exports.handler = async function(event) {
     };
 
   } catch (error) {
-    console.error('Erro no checkout:', error);
+    console.error('Erro Fatal no Checkout:', error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: error.message }),
+      body: JSON.stringify({ error: error.message || 'Erro interno no servidor.' }),
     };
   }
 };
