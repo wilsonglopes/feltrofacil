@@ -50,7 +50,7 @@ exports.handler = async function(event, context) {
           pending: "https://loja.feltrofacil.com.br/"
         },
         auto_return: "approved",
-        notification_url: "https://loja.feltrofacil.com.br/.netlify/functions/webhook-delivery"
+        notification_url: "https://feltrofacil.netlify.app/.netlify/functions/webhook-delivery"
       }
     });
 
