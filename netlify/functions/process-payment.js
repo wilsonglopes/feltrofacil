@@ -17,20 +17,25 @@ exports.handler = async function(event, context) {
     const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
     const payment = new Payment(client);
 
-    // 1. Recebe os dados que vieram do site (Dados do cartão + ID da apostila)
     const { formData, productId } = JSON.parse(event.body);
 
-    // 2. Monta o pacote de pagamento
-    // AQUI ESTÁ O SEGREDO: Adicionamos o 'notification_url' aqui!
+    // SEGURANÇA: Garante que pegamos o e-mail que o cliente digitou
+    const userEmail = formData.payer.email;
+
     const paymentPayload = {
         ...formData, 
-        external_reference: productId, // ID para sabermos qual apostila entregar
-        notification_url: "https://feltrofacil.netlify.app/.netlify/functions/webhook-delivery" // O Link que deu OK
+        external_reference: productId,
+        notification_url: "https://loja.feltrofacil.com.br/.netlify/functions/webhook-delivery",
+        // AQUI ESTÁ A CORREÇÃO 👇
+        // Guardamos o e-mail na metadata para ele não virar XXXXXXXXX depois
+        metadata: {
+            customer_email: userEmail,
+            product_id: productId
+        }
     };
 
-    console.log("Processando pagamento transparente para:", productId);
+    console.log("Iniciando pagamento para:", userEmail);
 
-    // 3. Envia para o Mercado Pago
     const response = await payment.create({ body: paymentPayload });
 
     return {
@@ -40,11 +45,11 @@ exports.handler = async function(event, context) {
     };
 
   } catch (error) {
-    console.error('Erro ao processar pagamento:', error);
+    console.error('Erro ao processar:', error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: error.message || 'Erro no processamento' }),
+      body: JSON.stringify({ error: error.message }),
     };
   }
 };
