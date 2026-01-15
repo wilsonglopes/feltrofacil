@@ -6,19 +6,23 @@
     <title>Loja Feltro Fácil - Apostilas Exclusivas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         body { font-family: 'Quicksand', sans-serif; background-color: #fcf7fd; }
         .btn-loading { opacity: 0.7; pointer-events: none; cursor: wait; }
         .text-brand { color: #660066; }
-        .bg-brand { background-color: #660066; }
-        .bg-brand-hover:hover { background-color: #4d004d; }
+        
+        /* Estilos do Modal */
+        #checkout-modal { transition: opacity 0.3s ease; }
+        #checkout-modal.hidden { opacity: 0; pointer-events: none; }
+        #checkout-modal.flex { opacity: 1; pointer-events: auto; }
     </style>
 </head>
 <body class="text-stone-700">
 
-    <header class="bg-white/90 backdrop-blur shadow-sm sticky top-0 z-50">
+    <header class="bg-white/90 backdrop-blur shadow-sm sticky top-0 z-40">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <img src="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/logo-f.png" 
@@ -53,52 +57,64 @@
         </div>
     </footer>
 
+    <div id="checkout-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="bg-[#660066] p-4 flex justify-between items-center">
+                <h3 class="text-white font-bold text-lg">Pagamento Seguro</h3>
+                <button onclick="closeModal()" class="text-white/80 hover:text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="p-4 overflow-y-auto flex-1">
+                <div id="paymentBrick_container"></div>
+                <div id="modal-loading" class="text-center py-12 hidden">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#660066] border-t-transparent"></div>
+                    <p class="mt-2 text-gray-500">Iniciando pagamento...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- CONFIGURAÇÃO ---
         const SUPABASE_URL = 'https://tyhiqdrndpchiqkcdidv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5aGlxZHJuZHBjaGlxa2NkaWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0OTU2MzIsImV4cCI6MjA3MjA3MTYzMn0.FCETO8-cPLCGMiw5qYv3_7lSsM6GBAAY914ZXbAhZDY';
+        
+        // ⚠️ IMPORTANTE: COLE SUA CHAVE PÚBLICA DO MERCADO PAGO AQUI
+        const MP_PUBLIC_KEY = 'APP_USR-8778090268012930-120615-e9cee44b781bdecb4dab1466d657699f-241067158'; 
         // --------------------
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const mp = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
+        let bricksBuilder = mp.bricks();
 
         async function loadProducts() {
             const grid = document.getElementById('products-grid');
-            
             const { data: products, error } = await supabaseClient
-                .from('products')
-                .select('*')
-                .order('title', { ascending: true });
+                .from('products').select('*').order('title', { ascending: true });
 
-            if (error) {
-                console.error("Erro Supabase:", error);
-                grid.innerHTML = '<p class="text-red-500 text-center col-span-full">Erro ao carregar produtos.</p>';
-                return;
-            }
-
-            if (!products || products.length === 0) {
-                grid.innerHTML = '<div class="col-span-full text-center bg-white p-8 rounded-lg shadow"><p class="text-stone-500">Nenhuma apostila encontrada.</p></div>';
+            if (error || !products) {
+                grid.innerHTML = '<p class="text-center col-span-full">Erro ao carregar produtos.</p>';
                 return;
             }
 
             grid.innerHTML = products.map(product => `
                 <div class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-purple-50 flex flex-col group">
                     <div class="h-64 overflow-hidden relative bg-white p-4 flex items-center justify-center">
-                        <img src="${product.cover_image || 'https://placehold.co/600x400/purple/white?text=Sem+Capa'}" 
-                             alt="${product.title}" 
-                             class="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-500">
+                        <img src="${product.cover_image || 'https://placehold.co/600x400'}" alt="${product.title}" class="w-full h-full object-contain group-hover:scale-105 transition-transform">
                     </div>
-                    
                     <div class="p-6 flex-1 flex flex-col">
                         <h3 class="font-bold text-xl mb-2 text-stone-800">${product.title}</h3>
                         <p class="text-stone-500 text-sm mb-6 flex-1 line-clamp-3">${product.description || 'Apostila digital em PDF.'}</p>
-                        
                         <div class="mt-auto pt-4 border-t border-gray-50 flex items-center justify-between">
                             <div>
                                 <p class="text-xs text-stone-400 uppercase tracking-wide">Investimento</p>
                                 <p class="text-2xl font-bold text-[#660066]">R$ ${parseFloat(product.price).toFixed(2).replace('.', ',')}</p>
                             </div>
-                            <button onclick="buyProduct('${product.id}', this)" 
-                                    class="bg-[#660066] hover:bg-[#4d004d] text-white font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-purple-200 transition-all transform hover:-translate-y-1">
+                            <button onclick="openCheckout('${product.id}')" class="bg-[#660066] hover:bg-[#4d004d] text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:-translate-y-1">
                                 Comprar
                             </button>
                         </div>
@@ -107,47 +123,79 @@
             `).join('');
         }
 
-        async function buyProduct(productId, btnElement) {
-            const originalText = btnElement.innerText;
-            
-            // Debug: Vamos ver no console se o ID está chegando aqui
-            console.log("Tentando comprar Produto ID:", productId);
+        // Função para abrir o Checkout Transparente
+        async function openCheckout(productId) {
+            const modal = document.getElementById('checkout-modal');
+            const container = document.getElementById('paymentBrick_container');
+            const loading = document.getElementById('modal-loading');
 
-            if (!productId) {
-                alert("Erro: ID do produto inválido.");
-                return;
-            }
+            // Limpa o checkout anterior se houver
+            container.innerHTML = '';
+            // Mostra o modal e o loading
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            loading.classList.remove('hidden');
 
-            btnElement.innerText = "Aguarde...";
-            btnElement.classList.add('btn-loading');
-            
             try {
-                // CORREÇÃO CRÍTICA AQUI: Adicionamos o 'headers'
+                // 1. Pede ao backend para criar a preferência
                 const response = await fetch('/.netlify/functions/create-checkout', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json' // <--- ISSO FALTAVA!
-                    },
-                    body: JSON.stringify({ productId: productId })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ productId })
                 });
                 
                 const data = await response.json();
+                if (!data.preferenceId) throw new Error(data.error || 'Erro ao criar pedido.');
+
+                // 2. Cria o Brick (Formulário)
+                const settings = {
+                    initialization: {
+                        preferenceId: data.preferenceId,
+                    },
+                    customization: {
+                        paymentMethods: {
+                            ticket: "all",
+                            bankTransfer: "all",
+                            creditCard: "all",
+                            debitCard: "all",
+                            mercadoPago: "all",
+                        },
+                    },
+                    callbacks: {
+                        onReady: () => {
+                            loading.classList.add('hidden'); // Esconde loading quando o form aparece
+                        },
+                        onSubmit: ({ selectedPaymentMethod, formData }) => {
+                            // Callback opcional se quiser processar algo antes
+                            return new Promise((resolve, reject) => resolve());
+                        },
+                        onError: (error) => {
+                            console.error(error);
+                            alert("Erro no pagamento.");
+                        },
+                    },
+                };
                 
-                if (!response.ok) {
-                    throw new Error(data.error || 'Erro desconhecido no servidor');
-                }
-                
-                if (data.init_point) {
-                    window.location.href = data.init_point;
-                } else {
-                    throw new Error('Link de pagamento não gerado.');
-                }
+                window.paymentBrickController = await bricksBuilder.create(
+                    'payment',
+                    'paymentBrick_container',
+                    settings
+                );
 
             } catch (err) {
-                console.error('Erro detalhado:', err);
-                alert('Erro ao iniciar pagamento: ' + err.message);
-                btnElement.innerText = originalText;
-                btnElement.classList.remove('btn-loading');
+                console.error(err);
+                alert('Erro ao iniciar checkout: ' + err.message);
+                closeModal();
+            }
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('checkout-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            // Limpa o brick para não duplicar se abrir de novo
+            if (window.paymentBrickController) {
+                window.paymentBrickController.unmount();
             }
         }
 
