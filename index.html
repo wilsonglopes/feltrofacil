@@ -9,38 +9,52 @@
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
-        body { font-family: 'Quicksand', sans-serif; background-color: #fff1f2; }
+        /* Ajustei o fundo para um tom muito suave de roxo/branco para combinar */
+        body { font-family: 'Quicksand', sans-serif; background-color: #fcf7fd; }
         .btn-loading { opacity: 0.7; pointer-events: none; cursor: wait; }
+        
+        /* Cor Personalizada da Feltro Fácil */
+        .text-brand { color: #660066; }
+        .bg-brand { background-color: #660066; }
+        .bg-brand-hover:hover { background-color: #4d004d; } /* Um tom um pouco mais escuro para o hover */
+        .border-brand { border-color: #660066; }
     </style>
 </head>
 <body class="text-stone-700">
 
-    <header class="bg-white/80 backdrop-blur shadow-sm sticky top-0 z-50">
-        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+    <header class="bg-white/90 backdrop-blur shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center gap-2">
-                <h1 class="text-2xl font-bold text-rose-500">Feltro Fácil <span class="text-stone-400 text-sm font-medium">| Loja</span></h1>
+                <img src="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/logo-f.png" 
+                     alt="Logo Feltro Fácil" 
+                     class="h-12 w-auto object-contain"> 
             </div>
-            <a href="https://feltrofacil.com.br" class="text-sm font-medium text-stone-500 hover:text-rose-500 transition-colors">Voltar ao Blog</a>
+            <a href="https://feltrofacil.com.br" class="text-sm font-bold text-stone-500 hover:text-[#660066] transition-colors">
+                Voltar ao Blog
+            </a>
         </div>
     </header>
 
     <main class="container mx-auto px-4 py-12 min-h-screen">
-        <div class="text-center max-w-2xl mx-auto mb-16">
-            <h2 class="text-4xl font-bold mb-4 text-stone-800">Apostilas de Sucesso</h2>
-            <p class="text-lg text-stone-600">Moldes testados e aprovados. Baixe, imprima e comece a feltrar hoje mesmo.</p>
+        <div class="text-center max-w-3xl mx-auto mb-16">
+            <h2 class="text-4xl font-bold mb-4 text-[#660066]">Apostilas Feltro Fácil</h2>
+            
+            <p class="text-lg text-stone-600">
+                Acesso imediato! Comprando agora, você recebe os moldes e o passo a passo diretamente no seu e-mail.
+            </p>
         </div>
 
         <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div class="col-span-full text-center py-12">
-                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-rose-500 border-t-transparent"></div>
-                <p class="mt-2 text-rose-500">Carregando apostilas...</p>
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#660066] border-t-transparent"></div>
+                <p class="mt-2 text-[#660066]">Carregando apostilas...</p>
             </div>
         </div>
     </main>
 
-    <footer class="bg-white mt-12 py-8 border-t border-rose-100">
+    <footer class="bg-white mt-12 py-8 border-t border-purple-100">
         <div class="container mx-auto text-center text-stone-400 text-sm">
-            &copy; 2026 Feltro Fácil. Feito com carinho.
+            &copy; 2026 Feltro Fácil. Todos os direitos reservados.
         </div>
     </footer>
 
@@ -72,9 +86,9 @@
             }
 
             grid.innerHTML = products.map(product => `
-                <div class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-rose-100 flex flex-col group">
+                <div class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-purple-50 flex flex-col group">
                     <div class="h-64 overflow-hidden relative bg-white p-4 flex items-center justify-center">
-                        <img src="${product.cover_image || 'https://placehold.co/600x400/rose/white?text=Sem+Capa'}" 
+                        <img src="${product.cover_image || 'https://placehold.co/600x400/purple/white?text=Sem+Capa'}" 
                              alt="${product.title}" 
                              class="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-500">
                     </div>
@@ -86,10 +100,10 @@
                         <div class="mt-auto pt-4 border-t border-gray-50 flex items-center justify-between">
                             <div>
                                 <p class="text-xs text-stone-400 uppercase tracking-wide">Investimento</p>
-                                <p class="text-2xl font-bold text-rose-500">R$ ${parseFloat(product.price).toFixed(2).replace('.', ',')}</p>
+                                <p class="text-2xl font-bold text-[#660066]">R$ ${parseFloat(product.price).toFixed(2).replace('.', ',')}</p>
                             </div>
                             <button onclick="buyProduct('${product.id}', this)" 
-                                    class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-rose-200 transition-all transform hover:-translate-y-1">
+                                    class="bg-[#660066] hover:bg-[#4d004d] text-white font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-purple-200 transition-all transform hover:-translate-y-1">
                                 Comprar
                             </button>
                         </div>
