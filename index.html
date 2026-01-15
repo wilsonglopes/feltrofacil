@@ -58,7 +58,7 @@
             const { data: products, error } = await supabaseClient
                 .from('products')
                 .select('*')
-                .order('title', { ascending: true }); // Mudei para ordenar por Nome (A-Z) para ficar organizado
+                .order('title', { ascending: true });
 
             if (error) {
                 console.error("Erro Supabase:", error);
@@ -73,7 +73,7 @@
 
             grid.innerHTML = products.map(product => `
                 <div class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-rose-100 flex flex-col group">
-                    <div class="h-64 overflow-hidden relative bg-rose-50 p-4 flex items-center justify-center">
+                    <div class="h-64 overflow-hidden relative bg-white p-4 flex items-center justify-center">
                         <img src="${product.cover_image || 'https://placehold.co/600x400/rose/white?text=Sem+Capa'}" 
                              alt="${product.title}" 
                              class="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-500">
