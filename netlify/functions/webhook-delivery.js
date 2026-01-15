@@ -69,7 +69,7 @@ exports.handler = async function(event) {
 
         // 6. Envia o E-mail
         await resend.emails.send({
-            from: 'Feltro Fácil <loja@feltrofacil.com.br>', // Configure seu domínio no Resend!
+            from: 'Feltro Fácil <onboarding@resend.dev>', // Configure seu domínio no Resend!
             to: [customerEmail],
             subject: `Sua apostila chegou! 🎁 - ${product.title}`,
             html: `
