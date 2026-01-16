@@ -3,158 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Admin - Feltro Fácil</title>
+    <title>Dashboard - Feltro Fácil</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/logo-f.png">
     <style>body { font-family: 'Quicksand', sans-serif; }</style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-gray-50 min-h-screen">
 
     <div id="login-screen" class="flex items-center justify-center min-h-screen">
         <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
             <div class="text-center mb-6">
                 <img src="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/logo-f.png" class="h-16 mx-auto mb-4">
-                <h2 class="text-2xl font-bold text-[#660066]">Área Administrativa</h2>
+                <h2 class="text-2xl font-bold text-[#660066]">Gestão da Loja</h2>
             </div>
             <form id="login-form" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">E-mail</label>
-                    <input type="email" id="email" class="mt-1 w-full p-3 border rounded-lg focus:ring-[#660066] focus:border-[#660066]" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Senha</label>
-                    <input type="password" id="password" class="mt-1 w-full p-3 border rounded-lg" required>
-                </div>
-                <button type="submit" class="w-full bg-[#660066] text-white py-3 rounded-lg font-bold hover:bg-[#4d004d] transition">Entrar</button>
+                <input type="email" id="email" placeholder="Seu E-mail" class="w-full p-3 border rounded-lg" required>
+                <input type="password" id="password" placeholder="Sua Senha" class="w-full p-3 border rounded-lg" required>
+                <button type="submit" class="w-full bg-[#660066] text-white py-3 rounded-lg font-bold hover:bg-[#4d004d]">Acessar Painel</button>
             </form>
             <p id="login-error" class="text-red-500 text-sm text-center mt-4 hidden"></p>
         </div>
     </div>
 
     <div id="dashboard-screen" class="hidden">
-        <nav class="bg-[#660066] text-white p-4 shadow-md sticky top-0 z-50">
+        <nav class="bg-[#660066] text-white p-4 shadow-lg sticky top-0 z-50">
             <div class="container mx-auto flex justify-between items-center">
-                <h1 class="font-bold text-xl">Painel Feltro Fácil</h1>
-                <div class="flex gap-4 items-center">
-                    <span id="user-email" class="text-sm opacity-80"></span>
-                    <button onclick="logout()" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded text-sm">Sair</button>
+                <div class="flex items-center gap-3">
+                    <img src="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/logo-f.png" class="h-8 bg-white rounded-full p-1">
+                    <h1 class="font-bold text-xl">Dashboard</h1>
                 </div>
+                <button onclick="logout()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded text-sm transition">Sair</button>
             </div>
         </nav>
 
-        <div class="container mx-auto p-6">
-            <div class="flex justify-between items-center mb-8">
-                <h2 class="text-3xl font-bold text-gray-800">Meus Produtos</h2>
-                <button onclick="openModal()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 shadow-lg">
+        <div class="container mx-auto p-6 max-w-6xl">
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500">
+                    <p class="text-gray-500 text-sm font-semibold uppercase">Faturamento Total</p>
+                    <h3 class="text-3xl font-bold text-gray-800 mt-2" id="stat-revenue">R$ 0,00</h3>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
+                    <p class="text-gray-500 text-sm font-semibold uppercase">Vendas Aprovadas</p>
+                    <h3 class="text-3xl font-bold text-gray-800 mt-2" id="stat-sales">0</h3>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-500">
+                    <p class="text-gray-500 text-sm font-semibold uppercase">Interesse (Cliques)</p>
+                    <h3 class="text-3xl font-bold text-gray-800 mt-2" id="stat-clicks">0</h3>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Gerenciar Produtos</h2>
+                <button onclick="openModal()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-md flex items-center gap-2 transition transform hover:scale-105">
                     <span>+</span> Novo Produto
                 </button>
             </div>
 
-            <div class="bg-white rounded-xl shadow overflow-hidden">
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
                 <table class="w-full text-left border-collapse">
-                    <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                    <thead class="bg-gray-50 text-gray-600 uppercase text-xs tracking-wider">
                         <tr>
-                            <th class="p-4">Capa</th>
-                            <th class="p-4">Título</th>
-                            <th class="p-4">Preço</th>
-                            <th class="p-4 text-right">Ações</th>
+                            <th class="p-4 border-b">Produto</th>
+                            <th class="p-4 border-b text-center">Preço</th>
+                            <th class="p-4 border-b text-center text-purple-600">Cliques</th>
+                            <th class="p-4 border-b text-center text-blue-600">Vendas</th>
+                            <th class="p-4 border-b text-center text-green-600">Receita</th>
+                            <th class="p-4 border-b text-right">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="products-table-body" class="divide-y divide-gray-100">
-                        </tbody>
+                        <tr><td colspan="6" class="p-8 text-center text-gray-500">Carregando dados...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <div id="product-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+    <div id="product-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div class="p-6 border-b flex justify-between items-center">
-                <h3 class="text-xl font-bold text-[#660066]" id="modal-title">Novo Produto</h3>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
+            <div class="p-6 border-b flex justify-between items-center bg-gray-50">
+                <h3 class="text-xl font-bold text-gray-800" id="modal-title">Produto</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-red-500 font-bold text-2xl">&times;</button>
             </div>
-            
-            <form id="product-form" class="p-6 space-y-4">
+            <form id="product-form" class="p-6 space-y-5">
                 <input type="hidden" id="prod-id">
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Título</label>
-                        <input type="text" id="prod-title" class="w-full p-2 border rounded" required>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Título</label>
+                        <input type="text" id="prod-title" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-200 outline-none" required>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Preço (R$)</label>
-                        <input type="number" step="0.01" id="prod-price" class="w-full p-2 border rounded" required>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Preço (R$)</label>
+                        <input type="number" step="0.01" id="prod-price" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-200 outline-none" required>
                     </div>
                 </div>
-
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-                    <textarea id="prod-desc" rows="3" class="w-full p-2 border rounded"></textarea>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Descrição</label>
+                    <textarea id="prod-desc" rows="3" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-200 outline-none"></textarea>
                 </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Capa (Imagem)</label>
-                        <input type="file" id="prod-cover" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-[#660066] hover:file:bg-purple-100">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Capa</label>
+                        <input type="file" id="prod-cover" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 transition">
                         <p class="text-xs text-gray-400 mt-1" id="current-cover-text"></p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Apostila (PDF)</label>
-                        <input type="file" id="prod-pdf" accept="application/pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-[#660066] hover:file:bg-purple-100">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Arquivo PDF</label>
+                        <input type="file" id="prod-pdf" accept="application/pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 transition">
                         <p class="text-xs text-gray-400 mt-1" id="current-pdf-text"></p>
                     </div>
                 </div>
-
-                <div class="pt-4 flex justify-end gap-3">
-                    <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
-                    <button type="submit" id="btn-save" class="bg-[#660066] text-white px-6 py-2 rounded hover:bg-[#4d004d]">Salvar Produto</button>
+                <div class="pt-4 flex justify-end gap-3 border-t mt-4">
+                    <button type="button" onclick="closeModal()" class="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition">Cancelar</button>
+                    <button type="submit" id="btn-save" class="bg-[#660066] text-white px-6 py-2.5 rounded-lg font-bold hover:bg-[#4d004d] transition shadow-lg">Salvar Produto</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
-        // CONFIGURAÇÃO
         const SUPABASE_URL = 'https://tyhiqdrndpchiqkcdidv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5aGlxZHJuZHBjaGlxa2NkaWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0OTU2MzIsImV4cCI6MjA3MjA3MTYzMn0.FCETO8-cPLCGMiw5qYv3_7lSsM6GBAAY914ZXbAhZDY';
         
-        // CORREÇÃO: Usamos 'adminClient' para evitar conflito com 'supabase' global
         const adminClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- AUTENTICAÇÃO ---
-        
-        // Verifica se já está logado ao abrir
+        // --- AUTH ---
         async function checkSession() {
             const { data: { session } } = await adminClient.auth.getSession();
-            if (session) {
-                showDashboard(session.user);
-            } else {
-                document.getElementById('login-screen').classList.remove('hidden');
-            }
+            if (session) showDashboard(session.user);
+            else document.getElementById('login-screen').classList.remove('hidden');
         }
 
-        // Login
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const btn = e.target.querySelector('button');
-            const errorMsg = document.getElementById('login-error');
-
-            btn.innerText = 'Entrando...';
-            btn.disabled = true;
-            errorMsg.classList.add('hidden');
-
             const { data, error } = await adminClient.auth.signInWithPassword({ email, password });
-
             if (error) {
-                errorMsg.innerText = 'Erro: ' + error.message;
-                errorMsg.classList.remove('hidden');
-                btn.innerText = 'Entrar';
-                btn.disabled = false;
+                document.getElementById('login-error').innerText = error.message;
+                document.getElementById('login-error').classList.remove('hidden');
             } else {
                 showDashboard(data.user);
             }
@@ -163,8 +155,7 @@
         function showDashboard(user) {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('dashboard-screen').classList.remove('hidden');
-            document.getElementById('user-email').innerText = user.email;
-            loadProducts();
+            loadData();
         }
 
         async function logout() {
@@ -172,60 +163,97 @@
             window.location.reload();
         }
 
-        // --- CRUD DE PRODUTOS ---
-
-        async function loadProducts() {
+        // --- DASHBOARD LOGIC ---
+        async function loadData() {
             const tbody = document.getElementById('products-table-body');
-            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center">Carregando...</td></tr>';
+            
+            // 1. Carrega Produtos
+            const { data: products } = await adminClient.from('products').select('*').order('created_at', { ascending: false });
+            
+            // 2. Carrega Vendas (Aprovadas)
+            const { data: sales } = await adminClient.from('sales').select('product_id, amount').eq('status', 'approved');
+            
+            // 3. Carrega Cliques
+            const { data: clicks } = await adminClient.from('clicks').select('product_id');
 
-            const { data: products, error } = await adminClient
-                .from('products')
-                .select('*')
-                .order('created_at', { ascending: false });
+            // --- CÁLCULOS ---
+            let totalRevenue = 0;
+            let totalSalesCount = sales.length;
+            let totalClicksCount = clicks ? clicks.length : 0;
 
-            if (error) {
-                alert('Erro ao carregar produtos');
-                return;
+            // Agrupar dados por Produto
+            const stats = {};
+            
+            // Inicia zerado para cada produto
+            products.forEach(p => {
+                stats[p.id] = { sales: 0, revenue: 0, clicks: 0 };
+            });
+
+            // Soma vendas
+            sales.forEach(s => {
+                if (stats[s.product_id]) {
+                    stats[s.product_id].sales++;
+                    stats[s.product_id].revenue += s.amount;
+                    totalRevenue += s.amount;
+                }
+            });
+
+            // Soma cliques
+            if (clicks) {
+                clicks.forEach(c => {
+                    if (stats[c.product_id]) {
+                        stats[c.product_id].clicks++;
+                    }
+                });
             }
 
-            tbody.innerHTML = products.map(p => `
-                <tr class="hover:bg-gray-50 border-b">
-                    <td class="p-4">
-                        <img src="${p.cover_image}" class="h-12 w-12 object-cover rounded bg-gray-200">
+            // --- ATUALIZA CARDS SUPERIORES ---
+            document.getElementById('stat-revenue').innerText = totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('stat-sales').innerText = totalSalesCount;
+            document.getElementById('stat-clicks').innerText = totalClicksCount;
+
+            // --- ATUALIZA TABELA ---
+            tbody.innerHTML = products.map(p => {
+                const s = stats[p.id];
+                return `
+                <tr class="hover:bg-gray-50 border-b transition">
+                    <td class="p-4 flex items-center gap-3">
+                        <img src="${p.cover_image}" class="h-12 w-12 object-cover rounded-md shadow-sm bg-gray-200">
+                        <span class="font-medium text-gray-700">${p.title}</span>
                     </td>
-                    <td class="p-4 font-medium">${p.title}</td>
-                    <td class="p-4 text-green-700 font-bold">R$ ${p.price}</td>
+                    <td class="p-4 text-center text-gray-600">R$ ${p.price}</td>
+                    <td class="p-4 text-center font-bold text-purple-600 bg-purple-50 rounded-lg">${s.clicks}</td>
+                    <td class="p-4 text-center font-bold text-blue-600 bg-blue-50 rounded-lg">${s.sales}</td>
+                    <td class="p-4 text-center font-bold text-green-600 bg-green-50 rounded-lg">
+                        ${s.revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </td>
                     <td class="p-4 text-right space-x-2">
-                        <button onclick='editProduct(${JSON.stringify(p)})' class="text-blue-600 hover:underline text-sm">Editar</button>
-                        <button onclick="deleteProduct('${p.id}')" class="text-red-600 hover:underline text-sm">Excluir</button>
+                        <button onclick='editProduct(${JSON.stringify(p)})' class="text-blue-500 hover:text-blue-700 font-medium text-sm transition">Editar</button>
+                        <button onclick="deleteProduct('${p.id}')" class="text-red-400 hover:text-red-600 font-medium text-sm transition">Excluir</button>
                     </td>
                 </tr>
-            `).join('');
+            `}).join('');
         }
 
-        // Abrir/Fechar Modal
+        // --- CRUD (Mantido do anterior) ---
         function openModal(product = null) {
             const modal = document.getElementById('product-modal');
-            const title = document.getElementById('modal-title');
-            const form = document.getElementById('product-form');
-            
-            form.reset();
+            document.getElementById('product-form').reset();
             document.getElementById('current-cover-text').innerText = '';
             document.getElementById('current-pdf-text').innerText = '';
 
             if (product) {
-                title.innerText = "Editar Produto";
+                document.getElementById('modal-title').innerText = "Editar Produto";
                 document.getElementById('prod-id').value = product.id;
                 document.getElementById('prod-title').value = product.title;
                 document.getElementById('prod-price').value = product.price;
                 document.getElementById('prod-desc').value = product.description;
-                document.getElementById('current-cover-text').innerText = 'Imagem atual mantida (selecione outra para trocar)';
-                document.getElementById('current-pdf-text').innerText = 'PDF atual mantido (selecione outro para trocar)';
+                document.getElementById('current-cover-text').innerText = 'Imagem atual mantida';
+                document.getElementById('current-pdf-text').innerText = 'PDF atual mantido';
             } else {
-                title.innerText = "Novo Produto";
+                document.getElementById('modal-title').innerText = "Novo Produto";
                 document.getElementById('prod-id').value = '';
             }
-
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
@@ -235,11 +263,10 @@
             document.getElementById('product-modal').classList.remove('flex');
         }
 
-        // Salvar (Criar ou Editar)
         document.getElementById('product-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btn-save');
-            const originalBtnText = btn.innerText;
+            const originalText = btn.innerText;
             btn.innerText = 'Salvando...';
             btn.disabled = true;
 
@@ -253,65 +280,43 @@
 
                 let updates = { title, price, description };
 
-                // Upload Imagem (Capa)
                 if (coverFile) {
                     const fileName = `cover_${Date.now()}_${coverFile.name.replace(/\s/g, '_')}`;
-                    const { data, error } = await adminClient.storage.from('capas').upload(fileName, coverFile);
-                    if (error) throw error;
-                    
+                    await adminClient.storage.from('capas').upload(fileName, coverFile);
                     const { data: { publicUrl } } = adminClient.storage.from('capas').getPublicUrl(fileName);
                     updates.cover_image = publicUrl;
                 }
 
-                // Upload PDF
                 if (pdfFile) {
                     const fileName = `apostila_${Date.now()}.pdf`;
-                    const { data, error } = await adminClient.storage.from('apostilas').upload(fileName, pdfFile);
-                    if (error) throw error;
-                    updates.pdf_filename = fileName; // Salvamos apenas o nome
+                    await adminClient.storage.from('apostilas').upload(fileName, pdfFile);
+                    updates.pdf_filename = fileName;
                 }
 
-                if (id) {
-                    // Atualizar
-                    const { error } = await adminClient.from('products').update(updates).eq('id', id);
-                    if (error) throw error;
-                } else {
-                    // Criar novo
-                    if (!coverFile || !pdfFile) throw new Error("Para criar, capa e PDF são obrigatórios!");
-                    const { error } = await adminClient.from('products').insert([updates]);
-                    if (error) throw error;
+                if (id) await adminClient.from('products').update(updates).eq('id', id);
+                else {
+                    if (!coverFile || !pdfFile) throw new Error("Capa e PDF obrigatórios!");
+                    await adminClient.from('products').insert([updates]);
                 }
 
                 closeModal();
-                loadProducts();
-                alert('Produto salvo com sucesso!');
-
+                loadData(); 
             } catch (err) {
-                console.error(err);
                 alert('Erro: ' + err.message);
             } finally {
-                btn.innerText = originalBtnText;
+                btn.innerText = originalText;
                 btn.disabled = false;
             }
         });
 
-        // Prepara edição
-        window.editProduct = (product) => {
-            openModal(product);
-        }
-
+        window.editProduct = (p) => openModal(p);
+        
         async function deleteProduct(id) {
-            if (!confirm('Tem certeza que deseja excluir este produto?')) return;
-            
-            const { error } = await adminClient.from('products').delete().eq('id', id);
-            if (error) {
-                alert('Erro ao excluir: ' + error.message);
-            } else {
-                loadProducts();
-            }
+            if (!confirm('Excluir este produto?')) return;
+            await adminClient.from('products').delete().eq('id', id);
+            loadData();
         }
 
-        // Inicia
         checkSession();
     </script>
 </body>
