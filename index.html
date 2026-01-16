@@ -96,9 +96,15 @@
             }
         }
 
-        async function loadProducts() {
+async function loadProducts() {
             const grid = document.getElementById('products-grid');
-            const { data: products, error } = await supabaseClient.from('products').select('*').order('title', { ascending: true });
+            
+            // AQUI ESTÁ A MUDANÇA 👇
+            // Mudamos de 'title' para 'created_at' e ascending para 'false'
+            const { data: products, error } = await supabaseClient
+                .from('products')
+                .select('*')
+                .order('created_at', { ascending: false });
 
             if (error || !products) { grid.innerHTML = '<p class="text-center col-span-full">Erro ao carregar produtos.</p>'; return; }
 
