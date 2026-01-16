@@ -119,17 +119,16 @@
     <script>
         // CONFIGURAÇÃO
         const SUPABASE_URL = 'https://tyhiqdrndpchiqkcdidv.supabase.co';
-        // ATENÇÃO: Use a mesma ANON KEY do site. Para o admin funcionar com segurança total,
-        // o ideal seria RLS configurado no banco. Com a Anon Key e RLS, o login protege.
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5aGlxZHJuZHBjaGlxa2NkaWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0OTU2MzIsImV4cCI6MjA3MjA3MTYzMn0.FCETO8-cPLCGMiw5qYv3_7lSsM6GBAAY914ZXbAhZDY';
         
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // CORREÇÃO: Usamos 'adminClient' para evitar conflito com 'supabase' global
+        const adminClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // --- AUTENTICAÇÃO ---
         
         // Verifica se já está logado ao abrir
         async function checkSession() {
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await adminClient.auth.getSession();
             if (session) {
                 showDashboard(session.user);
             } else {
@@ -149,7 +148,7 @@
             btn.disabled = true;
             errorMsg.classList.add('hidden');
 
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            const { data, error } = await adminClient.auth.signInWithPassword({ email, password });
 
             if (error) {
                 errorMsg.innerText = 'Erro: ' + error.message;
@@ -169,7 +168,7 @@
         }
 
         async function logout() {
-            await supabase.auth.signOut();
+            await adminClient.auth.signOut();
             window.location.reload();
         }
 
@@ -179,7 +178,7 @@
             const tbody = document.getElementById('products-table-body');
             tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center">Carregando...</td></tr>';
 
-            const { data: products, error } = await supabase
+            const { data: products, error } = await adminClient
                 .from('products')
                 .select('*')
                 .order('created_at', { ascending: false });
@@ -257,29 +256,29 @@
                 // Upload Imagem (Capa)
                 if (coverFile) {
                     const fileName = `cover_${Date.now()}_${coverFile.name.replace(/\s/g, '_')}`;
-                    const { data, error } = await supabase.storage.from('capas').upload(fileName, coverFile);
+                    const { data, error } = await adminClient.storage.from('capas').upload(fileName, coverFile);
                     if (error) throw error;
                     
-                    const { data: { publicUrl } } = supabase.storage.from('capas').getPublicUrl(fileName);
+                    const { data: { publicUrl } } = adminClient.storage.from('capas').getPublicUrl(fileName);
                     updates.cover_image = publicUrl;
                 }
 
                 // Upload PDF
                 if (pdfFile) {
                     const fileName = `apostila_${Date.now()}.pdf`;
-                    const { data, error } = await supabase.storage.from('apostilas').upload(fileName, pdfFile);
+                    const { data, error } = await adminClient.storage.from('apostilas').upload(fileName, pdfFile);
                     if (error) throw error;
-                    updates.pdf_filename = fileName; // Salvamos apenas o nome para gerar URL assinada depois
+                    updates.pdf_filename = fileName; // Salvamos apenas o nome
                 }
 
                 if (id) {
                     // Atualizar
-                    const { error } = await supabase.from('products').update(updates).eq('id', id);
+                    const { error } = await adminClient.from('products').update(updates).eq('id', id);
                     if (error) throw error;
                 } else {
                     // Criar novo
                     if (!coverFile || !pdfFile) throw new Error("Para criar, capa e PDF são obrigatórios!");
-                    const { error } = await supabase.from('products').insert([updates]);
+                    const { error } = await adminClient.from('products').insert([updates]);
                     if (error) throw error;
                 }
 
@@ -296,7 +295,7 @@
             }
         });
 
-        // Prepara edição (gambiarra para passar objeto no onclick)
+        // Prepara edição
         window.editProduct = (product) => {
             openModal(product);
         }
@@ -304,7 +303,7 @@
         async function deleteProduct(id) {
             if (!confirm('Tem certeza que deseja excluir este produto?')) return;
             
-            const { error } = await supabase.from('products').delete().eq('id', id);
+            const { error } = await adminClient.from('products').delete().eq('id', id);
             if (error) {
                 alert('Erro ao excluir: ' + error.message);
             } else {
