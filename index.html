@@ -23,9 +23,11 @@
     <header class="bg-white/90 backdrop-blur shadow-sm sticky top-0 z-40">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center gap-2">
-                <img src="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/logo-f.png" 
-                     alt="Logo Feltro Fácil" 
-                     class="h-12 w-auto object-contain"> 
+                <a href="index.html" class="hover:opacity-80 transition-opacity">
+                    <img src="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/logo-f.png" 
+                         alt="Logo Feltro Fácil" 
+                         class="h-7 w-auto object-contain">
+                </a>
             </div>
             <a href="https://feltrofacil.com.br" class="text-sm font-bold text-stone-500 hover:text-[#660066] transition-colors">Voltar ao Blog</a>
         </div>
@@ -101,18 +103,16 @@
         // --- FUNÇÃO DE RASTREAMENTO DE CLIQUES ---
         async function trackClick(productId) {
             try {
-                // Usa 'supabaseClient' que foi definido no topo
                 await supabaseClient.from('clicks').insert({ product_id: productId });
             } catch (e) {
                 console.error("Erro ao registrar clique", e);
             }
         }
 
-async function loadProducts() {
+        async function loadProducts() {
             const grid = document.getElementById('products-grid');
             
-            // AQUI ESTÁ A MUDANÇA 👇
-            // Mudamos de 'title' para 'created_at' e ascending para 'false'
+            // Mantendo a ordem por DATA (mais novo primeiro) como combinamos
             const { data: products, error } = await supabaseClient
                 .from('products')
                 .select('*')
@@ -120,15 +120,16 @@ async function loadProducts() {
 
             if (error || !products) { grid.innerHTML = '<p class="text-center col-span-full">Erro ao carregar produtos.</p>'; return; }
 
+            // MUDANÇA 2: Alterei 'bg-white' para 'bg-gray-50' para deixar o card levemente mais escuro que o fundo
             grid.innerHTML = products.map(product => `
-                <div class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-purple-50 flex flex-col group">
-                    <div class="h-64 overflow-hidden relative bg-white p-4 flex items-center justify-center">
+                <div class="bg-gray-50 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col group">
+                    <div class="h-64 overflow-hidden relative bg-white p-4 flex items-center justify-center border-b border-gray-100">
                         <img src="${product.cover_image}" alt="${product.title}" class="w-full h-full object-contain group-hover:scale-105 transition-transform">
                     </div>
                     <div class="p-6 flex-1 flex flex-col">
                         <h3 class="font-bold text-xl mb-2 text-stone-800">${product.title}</h3>
                         <p class="text-stone-500 text-sm mb-6 flex-1 line-clamp-3">${product.description || 'Apostila digital em PDF.'}</p>
-                        <div class="mt-auto pt-4 border-t border-gray-50 flex flex-col items-center justify-between">
+                        <div class="mt-auto pt-4 border-t border-gray-200 flex flex-col items-center justify-between">
                             <div class="w-full flex justify-between items-center mb-2">
                                 <p class="text-xs text-stone-400 uppercase tracking-wide">Investimento</p>
                                 <p class="text-2xl font-bold text-[#660066]">R$ ${parseFloat(product.price).toFixed(2).replace('.', ',')}</p>
@@ -201,7 +202,6 @@ async function loadProducts() {
                                     if (response.id) {
                                         resolve();
                                         showStatusScreen(response.id);
-                                        // Inicia o Detetive
                                         monitorPayment(response.id);
                                     } else {
                                         reject();
@@ -237,7 +237,6 @@ async function loadProducts() {
                 initialization: { paymentId: paymentId },
                 callbacks: {
                     onReady: () => {
-                        // Avisa o usuário que estamos olhando
                         document.getElementById('checking-payment').classList.remove('hidden');
                     },
                     onError: (error) => { console.error(error); },
@@ -246,23 +245,20 @@ async function loadProducts() {
             currentBrickController = await bricksBuilder.create('statusScreen', 'paymentBrick_container', settings);
         }
 
-        // --- DETETIVE DE PAGAMENTO COM TRAVA DE 15 MIN ---
         function monitorPayment(paymentId) {
             console.log("Iniciando monitoramento:", paymentId);
             let attempts = 0;
-            const maxAttempts = 300; // 300 tentativas * 3 segundos = 900s (15 minutos)
+            const maxAttempts = 300; 
             
             paymentCheckInterval = setInterval(async () => {
                 attempts++;
                 
-                // Trava de Segurança: Para depois de 15 min
                 if (attempts > maxAttempts) {
                     clearInterval(paymentCheckInterval);
                     document.getElementById('checking-payment').innerText = "Tempo limite atingido. Verifique seu e-mail.";
                     return;
                 }
 
-                // Pergunta ao Supabase
                 const { data, error } = await supabaseClient
                     .from('sales')
                     .select('id, status')
@@ -270,11 +266,9 @@ async function loadProducts() {
                     .maybeSingle();
 
                 if (data) {
-                    // SUCESSO!
                     console.log("Pagamento compensado!", data);
                     clearInterval(paymentCheckInterval);
                     
-                    // Pequeno delay para o usuário ver que deu certo antes de redirecionar
                     document.getElementById('checking-payment').innerText = "Pagamento Confirmado! Redirecionando...";
                     document.getElementById('checking-payment').className = "text-center mt-4 p-3 bg-green-50 text-green-700 font-bold rounded border border-green-200";
                     
@@ -282,7 +276,7 @@ async function loadProducts() {
                         window.location.href = 'sucesso.html'; 
                     }, 1500);
                 }
-            }, 3000); // Pergunta a cada 3 segundos
+            }, 3000); 
         }
 
         function closeModal() {
