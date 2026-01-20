@@ -3,7 +3,7 @@ const { Resend } = require('resend');
 const { MercadoPagoConfig, Payment } = require('mercadopago');
 
 exports.handler = async function(event) {
-  console.log("🔔 WEBHOOK CARRINHO INICIADO!"); 
+  console.log("🔔 WEBHOOK INICIADO!"); 
   
   try {
     const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
@@ -19,20 +19,19 @@ exports.handler = async function(event) {
     }
     if (!paymentId) return { statusCode: 200, body: 'Sem ID.' };
 
-    // 2. Consulta Status
+    // 2. Consulta Status no Mercado Pago
     const paymentData = await payment.get({ id: paymentId });
     
     if (paymentData.status === 'approved') {
         const customerEmail = paymentData.metadata?.customer_email || paymentData.payer.email;
-        // Pega a lista de IDs da metadata
         const itemsIdsString = paymentData.metadata?.items_ids; 
         
-        // Se não tiver lista (compra antiga), tenta pegar do external_reference (legado)
+        // Garante que temos uma lista de produtos (mesmo que seja 1 só)
         const productIds = itemsIdsString ? itemsIdsString.split(',') : [paymentData.external_reference];
 
         console.log(`📦 Processando ${productIds.length} itens para: ${customerEmail}`);
 
-        // 3. Busca detalhes de TODOS os produtos
+        // 3. Busca detalhes dos produtos no banco
         const { data: products } = await supabase
             .from('products')
             .select('*')
@@ -40,31 +39,32 @@ exports.handler = async function(event) {
 
         if (!products || products.length === 0) return { statusCode: 200, body: 'Produtos não encontrados.' };
 
-        // 4. Prepara links e HTML do e-mail
+        // 4. Salva no banco e prepara o e-mail
         let linksHtml = "";
+        let newSalesCount = 0; // Contador de vendas NOVAS
         
-        // Loop para processar cada produto
         for (const product of products) {
-            
-            // Salva a venda individualmente no banco (para aparecer no Admin)
-            // O try/catch aqui evita que o erro de duplicidade trave o resto
-            try {
-                await supabase.from('sales').insert({
-                    payment_id: String(paymentId),
-                    customer_email: customerEmail,
-                    product_id: product.id,
-                    amount: product.price, // Salva o preço individual
-                    status: 'approved'
-                });
-            } catch (dbError) {
-                console.log(`⚠️ Venda do produto ${product.title} já registrada ou erro de banco.`);
+            // Tenta salvar. O Supabase retorna 'error' se já existir (devido à nossa trava SQL)
+            const { error: dbError } = await supabase.from('sales').insert({
+                payment_id: String(paymentId),
+                customer_email: customerEmail,
+                product_id: product.id,
+                amount: product.price,
+                status: 'approved'
+            });
+
+            if (!dbError) {
+                // Se NÃO deu erro, significa que é uma venda nova
+                newSalesCount++;
+            } else {
+                console.log(`⚠️ Item duplicado ignorado: ${product.title}`);
             }
 
-            // Gera o Link
+            // Gera o link para o e-mail (geramos mesmo se for duplicado, para o caso de reenvio manual no futuro, 
+            // mas o envio do e-mail só acontece se newSalesCount > 0)
             const { data: signedUrlData } = await supabase
                 .storage.from('apostilas').createSignedUrl(product.pdf_filename, 604800);
 
-            // Adiciona na lista do e-mail
             linksHtml += `
                 <div style="background-color: #fff; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #eee;">
                     <p style="margin: 0 0 10px 0; font-weight: bold; color: #555;">${product.title}</p>
@@ -73,7 +73,14 @@ exports.handler = async function(event) {
             `;
         }
 
-        // 5. Envia UM e-mail com TUDO
+        // 5. O PULO DO GATO: Só envia e-mail se salvou pelo menos 1 venda nova
+        if (newSalesCount === 0) {
+            console.log("🛑 Todos os itens já foram processados. Ignorando envio de e-mail repetido.");
+            return { statusCode: 200, body: 'Já processado.' };
+        }
+
+        console.log(`📧 Enviando e-mail com ${newSalesCount} itens novos.`);
+
         await resend.emails.send({
             from: 'Feltro Fácil <nao-responda@loja.feltrofacil.com.br>', 
             to: [customerEmail],
@@ -97,7 +104,7 @@ exports.handler = async function(event) {
     return { statusCode: 200, body: 'Ok' };
 
   } catch (error) {
-    console.error('ERRO:', error);
+    console.error('ERRO CRÍTICO:', error);
     return { statusCode: 500, body: error.message };
   }
 };
