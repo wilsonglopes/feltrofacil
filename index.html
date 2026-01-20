@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://sdk.mercadopago.com/js/v2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         body { font-family: 'Quicksand', sans-serif; background-color: #fcf7fd; }
@@ -16,11 +17,16 @@
         #checkout-modal { transition: opacity 0.3s ease; }
         #checkout-modal.hidden { opacity: 0; pointer-events: none; }
         #checkout-modal.flex { opacity: 1; pointer-events: auto; }
+        
+        /* Animação do Carrinho */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .cart-bounce { animation: bounce 0.5s; }
     </style>
 </head>
-<body class="text-stone-700">
-
-    <header class="bg-white/90 backdrop-blur shadow-sm sticky top-0 z-40">
+<body class="text-stone-700 pb-20"> <header class="bg-white/90 backdrop-blur shadow-sm sticky top-0 z-40">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <a href="index.html" class="hover:opacity-80 transition-opacity">
@@ -36,7 +42,7 @@
     <main class="container mx-auto px-4 py-12 min-h-screen">
         <div class="text-center max-w-3xl mx-auto mb-16">
             <h2 class="text-4xl font-bold mb-4 text-[#660066]">Apostilas Feltro Fácil</h2>
-            <p class="text-lg text-stone-600">Acesso imediato! Comprando agora, você recebe os moldes e o passo a passo diretamente no seu e-mail.</p>
+            <p class="text-lg text-stone-600">Acesso imediato! Monte seu kit e receba tudo no seu e-mail.</p>
         </div>
 
         <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -47,21 +53,25 @@
         </div>
     </main>
 
+    <div id="floating-cart" onclick="openCartCheckout()" class="fixed bottom-6 right-6 bg-[#660066] text-white p-4 rounded-full shadow-2xl cursor-pointer hover:bg-[#4d004d] transition transform hover:scale-105 z-40 hidden flex items-center gap-3">
+        <div class="relative">
+            <i class="fas fa-shopping-cart text-xl"></i>
+            <span id="cart-count" class="absolute -top-3 -right-3 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">0</span>
+        </div>
+        <div class="font-bold">
+            <span class="text-xs font-normal block opacity-80">Total</span>
+            <span id="cart-total">R$ 0,00</span>
+        </div>
+    </div>
+
     <footer class="bg-white mt-12 py-8 border-t border-purple-100">
         <div class="container mx-auto text-center">
-            
             <div class="flex justify-center gap-6 mb-4 text-sm font-medium text-stone-500">
-                <a href="termos.html" class="hover:text-[#660066] transition-colors">Termos de Uso</a>
-                <span class="text-gray-300">|</span>
-                <a href="privacidade.html" class="hover:text-[#660066] transition-colors">Política de Privacidade</a>
-                <span class="text-gray-300">|</span>
-                <a href="mailto:wilsonglopes@gmail.com" class="hover:text-[#660066] transition-colors">Contato</a>
+                <a href="termos.html" class="hover:text-[#660066]">Termos de Uso</a> |
+                <a href="privacidade.html" class="hover:text-[#660066]">Política de Privacidade</a> |
+                <a href="mailto:wilsonglopes@gmail.com" class="hover:text-[#660066]">Contato</a>
             </div>
-
-            <p class="text-stone-400 text-xs">
-                &copy; 2026 Feltro Fácil • CNPJ: [SEU CNPJ/CPF AQUI] <br>
-                Todos os direitos reservados.
-            </p>
+            <p class="text-stone-400 text-xs">&copy; 2026 Feltro Fácil • Todos os direitos reservados.</p>
         </div>
     </footer>
 
@@ -69,10 +79,20 @@
         <div class="bg-white w-full max-w-md rounded-xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-[#660066] p-4 flex justify-between items-center shrink-0">
                 <h3 class="text-white font-bold text-lg">Finalizar Compra</h3>
-                <button onclick="closeModal()" class="text-white/80 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                <button onclick="closeModal()" class="text-white/80 hover:text-white"><i class="fas fa-times text-xl"></i></button>
             </div>
             
             <div class="p-4 overflow-y-auto flex-1 relative">
+                
+                <div id="checkout-items-list" class="mb-4 bg-gray-50 p-3 rounded text-sm hidden">
+                    <p class="font-bold text-gray-600 mb-2">Resumo do Pedido:</p>
+                    <ul id="items-ul" class="space-y-1 text-gray-500"></ul>
+                    <div class="border-t mt-2 pt-2 flex justify-between font-bold text-[#660066]">
+                        <span>Total:</span>
+                        <span id="modal-total-price">R$ 0,00</span>
+                    </div>
+                </div>
+
                 <div id="paymentBrick_container"></div>
                 
                 <div id="modal-loading" class="text-center py-12 hidden">
@@ -88,39 +108,87 @@
     </div>
 
     <script>
-        // --- CONFIGURAÇÃO ---
         const SUPABASE_URL = 'https://tyhiqdrndpchiqkcdidv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5aGlxZHJuZHBjaGlxa2NkaWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0OTU2MzIsImV4cCI6MjA3MjA3MTYzMn0.FCETO8-cPLCGMiw5qYv3_7lSsM6GBAAY914ZXbAhZDY';
         const MP_PUBLIC_KEY = 'APP_USR-7a43b3a9-e898-47a3-a72d-3c35447bf3dc'; 
-        // --------------------
-
+        
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const mp = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
         let bricksBuilder = mp.bricks();
         let currentBrickController = null;
         let paymentCheckInterval = null;
 
-        // --- FUNÇÃO DE RASTREAMENTO DE CLIQUES ---
-        async function trackClick(productId) {
-            try {
-                await supabaseClient.from('clicks').insert({ product_id: productId });
-            } catch (e) {
-                console.error("Erro ao registrar clique", e);
+        // --- LÓGICA DO CARRINHO ---
+        let cart = []; // Armazena objetos {id, title, price}
+
+        function addToCart(id, title, price) {
+            // Verifica se já está no carrinho
+            if (cart.some(item => item.id === id)) {
+                alert("Este item já está no carrinho!");
+                return;
             }
+
+            cart.push({ id, title, price: parseFloat(price) });
+            updateCartUI();
+            
+            // Efeito visual
+            const btn = document.getElementById(`btn-${id}`);
+            const originalText = btn.innerText;
+            btn.innerText = "Adicionado!";
+            btn.classList.add("bg-green-600");
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.classList.remove("bg-green-600");
+            }, 1000);
+        }
+
+        function updateCartUI() {
+            const floatCart = document.getElementById('floating-cart');
+            const countEl = document.getElementById('cart-count');
+            const totalEl = document.getElementById('cart-total');
+
+            if (cart.length > 0) {
+                floatCart.classList.remove('hidden');
+                floatCart.classList.add('flex');
+                floatCart.classList.add('cart-bounce');
+                setTimeout(() => floatCart.classList.remove('cart-bounce'), 500);
+            } else {
+                floatCart.classList.add('hidden');
+            }
+
+            countEl.innerText = cart.length;
+            const total = cart.reduce((acc, item) => acc + item.price, 0);
+            totalEl.innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
+        }
+
+        async function openCartCheckout() {
+            if (cart.length === 0) return;
+            // Pega APENAS os IDs para mandar pro backend
+            const cartIds = cart.map(item => item.id);
+            initCheckout(cartIds, true);
+        }
+
+        // --- COMPRA DIRETA (Funciona como um carrinho de 1 item) ---
+        async function buyNow(id, title, price) {
+            trackClick(id);
+            // Se clicar em comprar agora, limpamos o carrinho e colocamos só este item?
+            // Ou adicionamos ao carrinho e abrimos?
+            // Melhor: Tratamos como um checkout isolado para ser rápido, MAS visualmente podemos adicionar.
+            // Para simplificar a lógica do backend, vamos mandar como um array de 1 item.
+            initCheckout([id], false); 
+        }
+
+        // --- RASTREAMENTO ---
+        async function trackClick(productId) {
+            try { await supabaseClient.from('clicks').insert({ product_id: productId }); } catch (e) {}
         }
 
         async function loadProducts() {
             const grid = document.getElementById('products-grid');
-            
-            // Mantendo a ordem por DATA (mais novo primeiro) como combinamos
-            const { data: products, error } = await supabaseClient
-                .from('products')
-                .select('*')
-                .order('created_at', { ascending: false });
+            const { data: products, error } = await supabaseClient.from('products').select('*').order('created_at', { ascending: false });
 
-            if (error || !products) { grid.innerHTML = '<p class="text-center col-span-full">Erro ao carregar produtos.</p>'; return; }
+            if (error || !products) { grid.innerHTML = '<p class="text-center col-span-full">Erro ao carregar.</p>'; return; }
 
-            // MUDANÇA 2: Alterei 'bg-white' para 'bg-gray-50' para deixar o card levemente mais escuro que o fundo
             grid.innerHTML = products.map(product => `
                 <div class="bg-gray-50 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col group">
                     <div class="h-64 overflow-hidden relative bg-white p-4 flex items-center justify-center border-b border-gray-100">
@@ -128,45 +196,64 @@
                     </div>
                     <div class="p-6 flex-1 flex flex-col">
                         <h3 class="font-bold text-xl mb-2 text-stone-800">${product.title}</h3>
-                        <p class="text-stone-500 text-sm mb-6 flex-1 line-clamp-3">${product.description || 'Apostila digital em PDF.'}</p>
-                        <div class="mt-auto pt-4 border-t border-gray-200 flex flex-col items-center justify-between">
-                            <div class="w-full flex justify-between items-center mb-2">
-                                <p class="text-xs text-stone-400 uppercase tracking-wide">Investimento</p>
+                        <p class="text-stone-500 text-sm mb-6 flex-1 line-clamp-3">${product.description || 'Apostila PDF'}</p>
+                        <div class="mt-auto pt-4 border-t border-gray-200 flex flex-col gap-3">
+                            <div class="flex justify-between items-center">
+                                <p class="text-xs text-stone-400 uppercase">Investimento</p>
                                 <p class="text-2xl font-bold text-[#660066]">R$ ${parseFloat(product.price).toFixed(2).replace('.', ',')}</p>
                             </div>
-                            <button onclick="trackClick('${product.id}'); openCheckout('${product.id}')" 
-                                    class="mt-4 w-full bg-[#660066] text-white py-2 rounded-lg hover:bg-[#4d004d] transition duration-300 font-bold shadow-md">
-                                Comprar Agora
-                            </button>
+                            
+                            <div class="grid grid-cols-2 gap-2">
+                                <button id="btn-${product.id}" onclick="addToCart('${product.id}', '${product.title}', '${product.price}')" 
+                                    class="bg-purple-100 text-purple-700 py-2 rounded-lg hover:bg-purple-200 font-bold text-sm transition">
+                                    <i class="fas fa-cart-plus mr-1"></i> Add
+                                </button>
+                                <button onclick="buyNow('${product.id}', '${product.title}', '${product.price}')" 
+                                    class="bg-[#660066] text-white py-2 rounded-lg hover:bg-[#4d004d] font-bold text-sm transition shadow-md">
+                                    Comprar
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             `).join('');
         }
 
-        async function openCheckout(productId) {
+        // --- CHECKOUT UNIFICADO ---
+        async function initCheckout(cartIds, isCartMode) {
             const modal = document.getElementById('checkout-modal');
             const container = document.getElementById('paymentBrick_container');
             const loading = document.getElementById('modal-loading');
+            const itemsList = document.getElementById('checkout-items-list');
 
             if (currentBrickController) currentBrickController.unmount();
             if (paymentCheckInterval) clearInterval(paymentCheckInterval);
 
             container.innerHTML = ''; 
+            itemsList.classList.add('hidden'); // Esconde lista por enquanto
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             loading.classList.remove('hidden');
             document.getElementById('checking-payment').classList.add('hidden');
 
             try {
+                // Chama o backend enviando a LISTA (cartItems)
                 const response = await fetch('/.netlify/functions/create-checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ productId })
+                    body: JSON.stringify({ cartItems: cartIds })
                 });
                 
                 const data = await response.json();
                 if (!data.preferenceId) throw new Error(data.error || 'Erro ao iniciar.');
+
+                // Se for modo carrinho, mostra o resumo
+                if (isCartMode) {
+                    itemsList.classList.remove('hidden');
+                    const ul = document.getElementById('items-ul');
+                    ul.innerHTML = cart.map(i => `<li class="flex justify-between"><span>${i.title}</span> <span>R$ ${i.price.toFixed(2)}</span></li>`).join('');
+                    document.getElementById('modal-total-price').innerText = `R$ ${data.amount.toFixed(2)}`;
+                }
 
                 const settings = {
                     initialization: {
@@ -195,17 +282,19 @@
                                 fetch('/.netlify/functions/process-payment', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ formData, productId }) 
+                                    body: JSON.stringify({ formData, cartItems: cartIds }) // Envia a lista aqui também
                                 })
                                 .then((response) => response.json())
                                 .then((response) => {
                                     if (response.id) {
                                         resolve();
+                                        // Limpa o carrinho se der sucesso
+                                        if (isCartMode) { cart = []; updateCartUI(); }
                                         showStatusScreen(response.id);
                                         monitorPayment(response.id);
                                     } else {
                                         reject();
-                                        alert("Erro no pagamento: " + (response.error || 'Tente novamente.'));
+                                        alert("Erro: " + (response.error || 'Tente novamente.'));
                                     }
                                 })
                                 .catch((error) => {
@@ -230,15 +319,14 @@
 
         async function showStatusScreen(paymentId) {
             const container = document.getElementById('paymentBrick_container');
+            document.getElementById('checkout-items-list').classList.add('hidden'); // Esconde resumo no sucesso
             if (currentBrickController) currentBrickController.unmount();
             container.innerHTML = ''; 
 
             const settings = {
                 initialization: { paymentId: paymentId },
                 callbacks: {
-                    onReady: () => {
-                        document.getElementById('checking-payment').classList.remove('hidden');
-                    },
+                    onReady: () => { document.getElementById('checking-payment').classList.remove('hidden'); },
                     onError: (error) => { console.error(error); },
                 },
             };
@@ -246,50 +334,38 @@
         }
 
         function monitorPayment(paymentId) {
-            console.log("Iniciando monitoramento:", paymentId);
             let attempts = 0;
             const maxAttempts = 300; 
             
             paymentCheckInterval = setInterval(async () => {
                 attempts++;
-                
                 if (attempts > maxAttempts) {
                     clearInterval(paymentCheckInterval);
-                    document.getElementById('checking-payment').innerText = "Tempo limite atingido. Verifique seu e-mail.";
+                    document.getElementById('checking-payment').innerText = "Tempo limite. Verifique e-mail.";
                     return;
                 }
 
+                // Verifica se ALGUM produto desse pagamento já foi salvo
                 const { data, error } = await supabaseClient
                     .from('sales')
-                    .select('id, status')
+                    .select('id')
                     .eq('payment_id', String(paymentId))
-                    .maybeSingle();
+                    .limit(1);
 
-                if (data) {
-                    console.log("Pagamento compensado!", data);
+                if (data && data.length > 0) {
                     clearInterval(paymentCheckInterval);
-                    
-                    document.getElementById('checking-payment').innerText = "Pagamento Confirmado! Redirecionando...";
+                    document.getElementById('checking-payment').innerText = "Confirmado! Redirecionando...";
                     document.getElementById('checking-payment').className = "text-center mt-4 p-3 bg-green-50 text-green-700 font-bold rounded border border-green-200";
-                    
-                    setTimeout(() => {
-                        window.location.href = 'sucesso.html'; 
-                    }, 1500);
+                    setTimeout(() => { window.location.href = 'sucesso.html'; }, 1500);
                 }
             }, 3000); 
         }
 
         function closeModal() {
-            const modal = document.getElementById('checkout-modal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            
+            document.getElementById('checkout-modal').classList.add('hidden');
+            document.getElementById('checkout-modal').classList.remove('flex');
             if (paymentCheckInterval) clearInterval(paymentCheckInterval);
-            
-            if (currentBrickController) {
-                currentBrickController.unmount();
-                currentBrickController = null;
-            }
+            if (currentBrickController) { currentBrickController.unmount(); currentBrickController = null; }
         }
 
         document.addEventListener('DOMContentLoaded', loadProducts);
