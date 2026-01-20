@@ -26,27 +26,37 @@ exports.handler = async function(event) {
     
     if (paymentData.status === 'approved') {
         
-        // --- TRAVA DE SEGURANÇA INTELIGENTE ---
+        // --- TRAVA DE SEGURANÇA INTELIGENTE 2.0 ---
+        // Tenta criar a trava
         const { error: lockError } = await supabase
             .from('processed_webhooks')
             .insert({ payment_id: String(paymentId) });
 
         if (lockError) {
-            // Código 23505 é o código oficial do Postgres para "Violação de Unicidade" (Já existe)
-            if (lockError.code === '23505') {
-                console.log(`🛑 Pagamento ${paymentId} já processado. Parando.`);
-                return { statusCode: 200, body: 'Duplicata real.' };
+            // Se deu erro porque já existe a trava, vamos verificar se foi um "Zumbi"
+            console.log(`⚠️ Trava encontrada para ${paymentId}. Verificando se é real...`);
+            
+            // Pergunta: "Tem venda salva para esse ID?"
+            const { data: existingSales } = await supabase
+                .from('sales')
+                .select('id')
+                .eq('payment_id', String(paymentId));
+
+            // Se JÁ TEM venda salva, aí sim é duplicidade real. Paramos.
+            if (existingSales && existingSales.length > 0) {
+                console.log(`🛑 Vendas já confirmadas. Parando para evitar e-mail duplo.`);
+                return { statusCode: 200, body: 'Duplicata real confirmada.' };
             }
-            // Se for qualquer OUTRO erro (ex: tabela não existe), apenas logamos e CONTINUAMOS.
-            // Prioridade: O cliente TEM que receber o produto.
-            console.log("⚠️ Erro na trava (Ignorando para garantir entrega):", lockError.message);
+
+            // Se NÃO TEM venda, a trava é falsa (o código morreu antes de salvar). CONTINUAMOS!
+            console.log(`🧟 Trava Zumbi detectada! (Trava existe mas Vendas não). Processando...`);
         }
-        // ---------------------------------------
+        // -------------------------------------------
 
         const customerEmail = paymentData.metadata?.customer_email || paymentData.payer.email;
         const itemsIdsString = paymentData.metadata?.items_ids; 
         
-        // Garante a lista de produtos (Fallback para external_reference se metadata falhar)
+        // Garante a lista de produtos (Fallback para external_reference)
         let productIds = [];
         if (itemsIdsString) {
             productIds = itemsIdsString.split(',');
@@ -73,14 +83,18 @@ exports.handler = async function(event) {
         
         // 4. Salva as vendas e Gera Links
         for (const product of products) {
-            await supabase.from('sales').insert({
+            // Insere a venda
+            const { error: insertError } = await supabase.from('sales').insert({
                 payment_id: String(paymentId),
                 customer_email: customerEmail,
                 product_id: product.id,
                 amount: product.price,
                 status: 'approved'
-            }).catch(err => console.log(`Venda do item ${product.title} já registrada.`));
+            });
 
+            if (insertError) console.log(`Nota: Erro ao salvar venda (pode já existir): ${insertError.message}`);
+
+            // Gera o Link
             const { data: signedUrlData } = await supabase
                 .storage.from('apostilas').createSignedUrl(product.pdf_filename, 604800);
 
@@ -93,6 +107,7 @@ exports.handler = async function(event) {
         }
 
         // 5. Envia o E-mail
+        console.log(`📧 Enviando e-mail...`);
         await resend.emails.send({
             from: 'Feltro Fácil <nao-responda@loja.feltrofacil.com.br>', 
             to: [customerEmail],
@@ -110,14 +125,14 @@ exports.handler = async function(event) {
             `
         });
         
-        console.log("✅ Ciclo finalizado com sucesso.");
+        console.log("✅ Sucesso Total.");
         return { statusCode: 200, body: 'Sucesso' };
     }
 
     return { statusCode: 200, body: 'Ok' };
 
   } catch (error) {
-    console.error('❌ ERRO CRÍTICO:', error);
+    console.error('❌ ERRO:', error);
     return { statusCode: 500, body: error.message };
   }
 };
