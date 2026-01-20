@@ -3,391 +3,296 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Feltro Fácil</title>
+    <title>Loja Feltro Fácil - Apostilas Exclusivas</title>
+    <link rel="icon" type="image/png" href="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/novo_logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/logo-f.png">
-    <style>body { font-family: 'Quicksand', sans-serif; }</style>
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background-color: #fcf7fd; }
+        .text-brand { color: #660066; }
+        #checkout-modal { transition: opacity 0.3s ease; }
+        #checkout-modal.hidden { opacity: 0; pointer-events: none; }
+        #checkout-modal.flex { opacity: 1; pointer-events: auto; }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="text-stone-700">
 
-    <div id="login-screen" class="flex items-center justify-center min-h-screen">
-        <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-            <div class="text-center mb-6">
-                <img src="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/logo-f.png" class="h-16 mx-auto mb-4">
-                <h2 class="text-2xl font-bold text-[#660066]">Gestão da Loja</h2>
-            </div>
-            <form id="login-form" class="space-y-4">
-                <input type="email" id="email" placeholder="Seu E-mail" class="w-full p-3 border rounded-lg" required>
-                <input type="password" id="password" placeholder="Sua Senha" class="w-full p-3 border rounded-lg" required>
-                <button type="submit" class="w-full bg-[#660066] text-white py-3 rounded-lg font-bold hover:bg-[#4d004d]">Acessar Painel</button>
-            </form>
-            <p id="login-error" class="text-red-500 text-sm text-center mt-4 hidden"></p>
-        </div>
-    </div>
-
-    <div id="dashboard-screen" class="hidden">
-        <nav class="bg-[#660066] text-white p-4 shadow-lg sticky top-0 z-50">
-            <div class="container mx-auto flex justify-between items-center">
-                <a href="/" target="_blank" title="Ir para a Loja (Abre nova aba)" class="flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
-                    <img src="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/logo-f.png" class="h-8 bg-white rounded-full p-1">
-                    <h1 class="font-bold text-xl">Dashboard <span class="text-xs font-normal opacity-70 ml-1">(Ver Loja ↗)</span></h1>
+    <header class="bg-white/90 backdrop-blur shadow-sm sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <a href="index.html" class="hover:opacity-80 transition-opacity">
+                    <img src="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/logo-f.png" 
+                         alt="Logo Feltro Fácil" 
+                         class="h-7 w-auto object-contain">
                 </a>
-                
-                <button onclick="logout()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded text-sm transition">Sair</button>
             </div>
-        </nav>
-
-        <div class="container mx-auto p-6 max-w-6xl">
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500">
-                    <p class="text-gray-500 text-sm font-semibold uppercase">Faturamento Total</p>
-                    <h3 class="text-3xl font-bold text-gray-800 mt-2" id="stat-revenue">R$ 0,00</h3>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
-                    <p class="text-gray-500 text-sm font-semibold uppercase">Vendas Aprovadas</p>
-                    <h3 class="text-3xl font-bold text-gray-800 mt-2" id="stat-sales">0</h3>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-500">
-                    <p class="text-gray-500 text-sm font-semibold uppercase">Interesse (Cliques)</p>
-                    <h3 class="text-3xl font-bold text-gray-800 mt-2" id="stat-clicks">0</h3>
-                </div>
-            </div>
-
-            <div class="flex justify-between items-center mb-6 mt-10">
-                <h2 class="text-2xl font-bold text-gray-800">Meus Produtos</h2>
-                <button onclick="openModal()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-md flex items-center gap-2 transition transform hover:scale-105">
-                    <span>+</span> Novo Produto
-                </button>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 mb-12">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-gray-50 text-gray-600 uppercase text-xs tracking-wider">
-                        <tr>
-                            <th class="p-4 border-b">Produto</th>
-                            <th class="p-4 border-b text-center">Preço</th>
-                            <th class="p-4 border-b text-center text-blue-600">Vendas</th>
-                            <th class="p-4 border-b text-right">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="products-table-body" class="divide-y divide-gray-100">
-                        <tr><td colspan="4" class="p-8 text-center text-gray-500">Carregando dados...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Últimas Vendas (Clientes)</h2>
-                <button onclick="loadSalesData()" class="text-sm text-purple-600 hover:underline">Atualizar Lista</button>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="bg-gray-50 text-gray-600 uppercase text-xs tracking-wider">
-                            <tr>
-                                <th class="p-4 border-b">Data</th>
-                                <th class="p-4 border-b">Cliente (E-mail)</th>
-                                <th class="p-4 border-b">Apostila</th>
-                                <th class="p-4 border-b text-center">Valor</th>
-                                <th class="p-4 border-b text-right">Suporte</th>
-                            </tr>
-                        </thead>
-                        <tbody id="sales-table-body" class="divide-y divide-gray-100">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
-
+            <a href="https://feltrofacil.com.br" class="text-sm font-bold text-stone-500 hover:text-[#660066] transition-colors">Voltar ao Blog</a>
         </div>
-    </div>
+    </header>
 
-    <div id="product-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div class="p-6 border-b flex justify-between items-center bg-gray-50">
-                <h3 class="text-xl font-bold text-gray-800" id="modal-title">Produto</h3>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-red-500 font-bold text-2xl">&times;</button>
+    <main class="container mx-auto px-4 py-12 min-h-screen">
+        <div class="text-center max-w-3xl mx-auto mb-16">
+            <h2 class="text-4xl font-bold mb-4 text-[#660066]">Apostilas Feltro Fácil</h2>
+            <p class="text-lg text-stone-600">Acesso imediato! Comprando agora, você recebe os moldes e o passo a passo diretamente no seu e-mail.</p>
+        </div>
+
+        <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="col-span-full text-center py-12">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#660066] border-t-transparent"></div>
+                <p class="mt-2 text-[#660066]">Carregando apostilas...</p>
             </div>
-            <form id="product-form" class="p-6 space-y-5">
-                <input type="hidden" id="prod-id">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Título</label>
-                        <input type="text" id="prod-title" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-200 outline-none" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Preço (R$)</label>
-                        <input type="number" step="0.01" id="prod-price" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-200 outline-none" required>
-                    </div>
+        </div>
+    </main>
+
+    <footer class="bg-white mt-12 py-8 border-t border-purple-100">
+        <div class="container mx-auto text-center">
+            
+            <div class="flex justify-center gap-6 mb-4 text-sm font-medium text-stone-500">
+                <a href="termos.html" class="hover:text-[#660066] transition-colors">Termos de Uso</a>
+                <span class="text-gray-300">|</span>
+                <a href="privacidade.html" class="hover:text-[#660066] transition-colors">Política de Privacidade</a>
+                <span class="text-gray-300">|</span>
+                <a href="mailto:wilsonglopes@gmail.com" class="hover:text-[#660066] transition-colors">Contato</a>
+            </div>
+
+            <p class="text-stone-400 text-xs">
+                &copy; 2026 Feltro Fácil • CNPJ: [SEU CNPJ/CPF AQUI] <br>
+                Todos os direitos reservados.
+            </p>
+        </div>
+    </footer>
+
+    <div id="checkout-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="bg-[#660066] p-4 flex justify-between items-center shrink-0">
+                <h3 class="text-white font-bold text-lg">Finalizar Compra</h3>
+                <button onclick="closeModal()" class="text-white/80 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+            </div>
+            
+            <div class="p-4 overflow-y-auto flex-1 relative">
+                <div id="paymentBrick_container"></div>
+                
+                <div id="modal-loading" class="text-center py-12 hidden">
+                    <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-[#660066] border-t-transparent"></div>
+                    <p class="mt-4 text-gray-600 font-medium">Iniciando pagamento seguro...</p>
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">Descrição</label>
-                    <textarea id="prod-desc" rows="3" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-200 outline-none"></textarea>
+
+                <div id="checking-payment" class="hidden text-center mt-4 p-3 bg-purple-50 text-purple-700 text-sm rounded border border-purple-100 animate-pulse">
+                    Aguardando confirmação do banco...
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Capa</label>
-                        <input type="file" id="prod-cover" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 transition">
-                        <p class="text-xs text-gray-400 mt-1" id="current-cover-text"></p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Arquivo PDF</label>
-                        <input type="file" id="prod-pdf" accept="application/pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 transition">
-                        <p class="text-xs text-gray-400 mt-1" id="current-pdf-text"></p>
-                    </div>
-                </div>
-                <div class="pt-4 flex justify-end gap-3 border-t mt-4">
-                    <button type="button" onclick="closeModal()" class="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition">Cancelar</button>
-                    <button type="submit" id="btn-save" class="bg-[#660066] text-white px-6 py-2.5 rounded-lg font-bold hover:bg-[#4d004d] transition shadow-lg">Salvar Produto</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 
     <script>
+        // --- CONFIGURAÇÃO ---
         const SUPABASE_URL = 'https://tyhiqdrndpchiqkcdidv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5aGlxZHJuZHBjaGlxa2NkaWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0OTU2MzIsImV4cCI6MjA3MjA3MTYzMn0.FCETO8-cPLCGMiw5qYv3_7lSsM6GBAAY914ZXbAhZDY';
-        
-        const adminClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const MP_PUBLIC_KEY = 'APP_USR-7a43b3a9-e898-47a3-a72d-3c35447bf3dc'; 
+        // --------------------
 
-        async function checkSession() {
-            const { data: { session } } = await adminClient.auth.getSession();
-            if (session) showDashboard(session.user);
-            else document.getElementById('login-screen').classList.remove('hidden');
-        }
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const mp = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
+        let bricksBuilder = mp.bricks();
+        let currentBrickController = null;
+        let paymentCheckInterval = null;
 
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const { data, error } = await adminClient.auth.signInWithPassword({ email, password });
-            if (error) {
-                document.getElementById('login-error').innerText = error.message;
-                document.getElementById('login-error').classList.remove('hidden');
-            } else {
-                showDashboard(data.user);
-            }
-        });
-
-        function showDashboard(user) {
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('dashboard-screen').classList.remove('hidden');
-            loadData();
-            loadSalesData();
-        }
-
-        async function logout() {
-            await adminClient.auth.signOut();
-            window.location.reload();
-        }
-
-        // --- DASHBOARD GERAL ---
-        async function loadData() {
-            const tbody = document.getElementById('products-table-body');
-            const { data: products } = await adminClient.from('products').select('*').order('created_at', { ascending: false });
-            const { data: sales } = await adminClient.from('sales').select('product_id, amount').eq('status', 'approved');
-            const { data: clicks } = await adminClient.from('clicks').select('product_id');
-
-            let totalRevenue = 0;
-            let totalSalesCount = sales ? sales.length : 0;
-            let totalClicksCount = clicks ? clicks.length : 0;
-
-            const stats = {};
-            products.forEach(p => { stats[p.id] = { sales: 0, revenue: 0, clicks: 0 }; });
-
-            if(sales) sales.forEach(s => {
-                if (stats[s.product_id]) {
-                    stats[s.product_id].sales++;
-                    stats[s.product_id].revenue += s.amount;
-                    totalRevenue += s.amount;
-                }
-            });
-
-            if (clicks) clicks.forEach(c => {
-                if (stats[c.product_id]) stats[c.product_id].clicks++;
-            });
-
-            document.getElementById('stat-revenue').innerText = totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            document.getElementById('stat-sales').innerText = totalSalesCount;
-            document.getElementById('stat-clicks').innerText = totalClicksCount;
-
-            tbody.innerHTML = products.map(p => {
-                const s = stats[p.id];
-                return `
-                <tr class="hover:bg-gray-50 border-b transition">
-                    <td class="p-4 flex items-center gap-3">
-                        <img src="${p.cover_image}" class="h-12 w-12 object-cover rounded-md shadow-sm bg-gray-200">
-                        <span class="font-medium text-gray-700">${p.title}</span>
-                    </td>
-                    <td class="p-4 text-center text-gray-600">R$ ${p.price}</td>
-                    <td class="p-4 text-center font-bold text-blue-600 bg-blue-50 rounded-lg">${s.sales}</td>
-                    <td class="p-4 text-right space-x-2">
-                        <button onclick='editProduct(${JSON.stringify(p)})' class="text-blue-500 hover:text-blue-700 font-medium text-sm transition">Editar</button>
-                        <button onclick="deleteProduct('${p.id}')" class="text-red-400 hover:text-red-600 font-medium text-sm transition">Excluir</button>
-                    </td>
-                </tr>
-            `}).join('');
-        }
-
-        // --- LISTA DE VENDAS E REENVIO ---
-        async function loadSalesData() {
-            const tbody = document.getElementById('sales-table-body');
-            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">Carregando vendas...</td></tr>';
-
-            const { data: sales, error } = await adminClient
-                .from('sales')
-                .select('*, products(title)')
-                .eq('status', 'approved')
-                .order('created_at', { ascending: false })
-                .limit(50);
-
-            if (error) {
-                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500">Erro ao carregar vendas.</td></tr>';
-                return;
-            }
-
-            if (!sales || sales.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">Nenhuma venda registrada ainda.</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = sales.map(sale => {
-                const date = new Date(sale.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
-                return `
-                    <tr class="hover:bg-gray-50 border-b text-sm">
-                        <td class="p-4 text-gray-500">${date}</td>
-                        <td class="p-4 font-medium text-gray-800">${sale.customer_email}</td>
-                        <td class="p-4 text-gray-600">${sale.products ? sale.products.title : 'Produto excluído'}</td>
-                        <td class="p-4 text-center text-green-600 font-bold">R$ ${sale.amount}</td>
-                        <td class="p-4 text-right">
-                            <button onclick="resendEmail('${sale.id}', this)" 
-                                    class="bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1 rounded-full text-xs font-bold transition flex items-center gap-1 ml-auto">
-                                📩 Reenviar E-mail
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        // AÇÃO DE REENVIAR
-        async function resendEmail(saleId, btn) {
-            if(!confirm("Deseja reenviar o e-mail com a apostila para este cliente?")) return;
-
-            const originalText = btn.innerHTML;
-            btn.innerHTML = "⏳ Enviando...";
-            btn.disabled = true;
-
+        // --- FUNÇÃO DE RASTREAMENTO DE CLIQUES ---
+        async function trackClick(productId) {
             try {
-                const response = await fetch('/.netlify/functions/resend-email', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ saleId })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    alert("Sucesso! O e-mail foi reenviado para o cliente.");
-                    btn.innerHTML = "✅ Enviado";
-                } else {
-                    throw new Error(data.error || "Erro desconhecido");
-                }
+                await supabaseClient.from('clicks').insert({ product_id: productId });
             } catch (e) {
-                alert("Erro ao enviar: " + e.message);
-                btn.innerHTML = "❌ Erro";
-            } finally {
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                }, 3000);
+                console.error("Erro ao registrar clique", e);
             }
         }
 
-        // --- CRUD E MODAL ---
-        function openModal(product = null) {
-            const modal = document.getElementById('product-modal');
-            document.getElementById('product-form').reset();
-            document.getElementById('current-cover-text').innerText = '';
-            document.getElementById('current-pdf-text').innerText = '';
+        async function loadProducts() {
+            const grid = document.getElementById('products-grid');
+            
+            // Mantendo a ordem por DATA (mais novo primeiro) como combinamos
+            const { data: products, error } = await supabaseClient
+                .from('products')
+                .select('*')
+                .order('created_at', { ascending: false });
 
-            if (product) {
-                document.getElementById('modal-title').innerText = "Editar Produto";
-                document.getElementById('prod-id').value = product.id;
-                document.getElementById('prod-title').value = product.title;
-                document.getElementById('prod-price').value = product.price;
-                document.getElementById('prod-desc').value = product.description;
-                document.getElementById('current-cover-text').innerText = 'Imagem atual mantida';
-                document.getElementById('current-pdf-text').innerText = 'PDF atual mantido';
-            } else {
-                document.getElementById('modal-title').innerText = "Novo Produto";
-                document.getElementById('prod-id').value = '';
-            }
+            if (error || !products) { grid.innerHTML = '<p class="text-center col-span-full">Erro ao carregar produtos.</p>'; return; }
+
+            // MUDANÇA 2: Alterei 'bg-white' para 'bg-gray-50' para deixar o card levemente mais escuro que o fundo
+            grid.innerHTML = products.map(product => `
+                <div class="bg-gray-50 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col group">
+                    <div class="h-64 overflow-hidden relative bg-white p-4 flex items-center justify-center border-b border-gray-100">
+                        <img src="${product.cover_image}" alt="${product.title}" class="w-full h-full object-contain group-hover:scale-105 transition-transform">
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col">
+                        <h3 class="font-bold text-xl mb-2 text-stone-800">${product.title}</h3>
+                        <p class="text-stone-500 text-sm mb-6 flex-1 line-clamp-3">${product.description || 'Apostila digital em PDF.'}</p>
+                        <div class="mt-auto pt-4 border-t border-gray-200 flex flex-col items-center justify-between">
+                            <div class="w-full flex justify-between items-center mb-2">
+                                <p class="text-xs text-stone-400 uppercase tracking-wide">Investimento</p>
+                                <p class="text-2xl font-bold text-[#660066]">R$ ${parseFloat(product.price).toFixed(2).replace('.', ',')}</p>
+                            </div>
+                            <button onclick="trackClick('${product.id}'); openCheckout('${product.id}')" 
+                                    class="mt-4 w-full bg-[#660066] text-white py-2 rounded-lg hover:bg-[#4d004d] transition duration-300 font-bold shadow-md">
+                                Comprar Agora
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function openCheckout(productId) {
+            const modal = document.getElementById('checkout-modal');
+            const container = document.getElementById('paymentBrick_container');
+            const loading = document.getElementById('modal-loading');
+
+            if (currentBrickController) currentBrickController.unmount();
+            if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+
+            container.innerHTML = ''; 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+            loading.classList.remove('hidden');
+            document.getElementById('checking-payment').classList.add('hidden');
+
+            try {
+                const response = await fetch('/.netlify/functions/create-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ productId })
+                });
+                
+                const data = await response.json();
+                if (!data.preferenceId) throw new Error(data.error || 'Erro ao iniciar.');
+
+                const settings = {
+                    initialization: {
+                        preferenceId: data.preferenceId,
+                        amount: data.amount,
+                    },
+                    customization: {
+                        paymentMethods: {
+                            ticket: "all",
+                            bankTransfer: "all",
+                            creditCard: "all",
+                            debitCard: "all",
+                            mercadoPago: "all",
+                        },
+                        visual: {
+                            style: {
+                                theme: 'default',
+                                customVariables: { formBackgroundColor: '#ffffff', baseColor: '#660066' }
+                            }
+                        }
+                    },
+                    callbacks: {
+                        onReady: () => { loading.classList.add('hidden'); },
+                        onSubmit: ({ selectedPaymentMethod, formData }) => {
+                            return new Promise((resolve, reject) => {
+                                fetch('/.netlify/functions/process-payment', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ formData, productId }) 
+                                })
+                                .then((response) => response.json())
+                                .then((response) => {
+                                    if (response.id) {
+                                        resolve();
+                                        showStatusScreen(response.id);
+                                        monitorPayment(response.id);
+                                    } else {
+                                        reject();
+                                        alert("Erro no pagamento: " + (response.error || 'Tente novamente.'));
+                                    }
+                                })
+                                .catch((error) => {
+                                    console.error(error);
+                                    reject();
+                                    alert("Erro de conexão.");
+                                });
+                            });
+                        },
+                        onError: (error) => { console.error(error); },
+                    },
+                };
+                
+                currentBrickController = await bricksBuilder.create('payment', 'paymentBrick_container', settings);
+
+            } catch (err) {
+                console.error(err);
+                alert('Erro: ' + err.message);
+                closeModal();
+            }
+        }
+
+        async function showStatusScreen(paymentId) {
+            const container = document.getElementById('paymentBrick_container');
+            if (currentBrickController) currentBrickController.unmount();
+            container.innerHTML = ''; 
+
+            const settings = {
+                initialization: { paymentId: paymentId },
+                callbacks: {
+                    onReady: () => {
+                        document.getElementById('checking-payment').classList.remove('hidden');
+                    },
+                    onError: (error) => { console.error(error); },
+                },
+            };
+            currentBrickController = await bricksBuilder.create('statusScreen', 'paymentBrick_container', settings);
+        }
+
+        function monitorPayment(paymentId) {
+            console.log("Iniciando monitoramento:", paymentId);
+            let attempts = 0;
+            const maxAttempts = 300; 
+            
+            paymentCheckInterval = setInterval(async () => {
+                attempts++;
+                
+                if (attempts > maxAttempts) {
+                    clearInterval(paymentCheckInterval);
+                    document.getElementById('checking-payment').innerText = "Tempo limite atingido. Verifique seu e-mail.";
+                    return;
+                }
+
+                const { data, error } = await supabaseClient
+                    .from('sales')
+                    .select('id, status')
+                    .eq('payment_id', String(paymentId))
+                    .maybeSingle();
+
+                if (data) {
+                    console.log("Pagamento compensado!", data);
+                    clearInterval(paymentCheckInterval);
+                    
+                    document.getElementById('checking-payment').innerText = "Pagamento Confirmado! Redirecionando...";
+                    document.getElementById('checking-payment').className = "text-center mt-4 p-3 bg-green-50 text-green-700 font-bold rounded border border-green-200";
+                    
+                    setTimeout(() => {
+                        window.location.href = 'sucesso.html'; 
+                    }, 1500);
+                }
+            }, 3000); 
         }
 
         function closeModal() {
-            document.getElementById('product-modal').classList.add('hidden');
-            document.getElementById('product-modal').classList.remove('flex');
-        }
-
-        document.getElementById('product-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btn-save');
-            const originalText = btn.innerText;
-            btn.innerText = 'Salvando...';
-            btn.disabled = true;
-
-            try {
-                const id = document.getElementById('prod-id').value;
-                const title = document.getElementById('prod-title').value;
-                const price = document.getElementById('prod-price').value;
-                const description = document.getElementById('prod-desc').value;
-                const coverFile = document.getElementById('prod-cover').files[0];
-                const pdfFile = document.getElementById('prod-pdf').files[0];
-
-                let updates = { title, price, description };
-
-                if (coverFile) {
-                    const fileName = `cover_${Date.now()}_${coverFile.name.replace(/\s/g, '_')}`;
-                    await adminClient.storage.from('capas').upload(fileName, coverFile);
-                    const { data: { publicUrl } } = adminClient.storage.from('capas').getPublicUrl(fileName);
-                    updates.cover_image = publicUrl;
-                }
-
-                if (pdfFile) {
-                    const fileName = `apostila_${Date.now()}.pdf`;
-                    await adminClient.storage.from('apostilas').upload(fileName, pdfFile);
-                    updates.pdf_filename = fileName;
-                }
-
-                if (id) await adminClient.from('products').update(updates).eq('id', id);
-                else {
-                    if (!coverFile || !pdfFile) throw new Error("Capa e PDF obrigatórios!");
-                    await adminClient.from('products').insert([updates]);
-                }
-
-                closeModal();
-                loadData(); 
-            } catch (err) {
-                alert('Erro: ' + err.message);
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
+            const modal = document.getElementById('checkout-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            
+            if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+            
+            if (currentBrickController) {
+                currentBrickController.unmount();
+                currentBrickController = null;
             }
-        });
-
-        window.editProduct = (p) => openModal(p);
-        
-        async function deleteProduct(id) {
-            if (!confirm('Excluir este produto?')) return;
-            await adminClient.from('products').delete().eq('id', id);
-            loadData();
         }
 
-        checkSession();
+        document.addEventListener('DOMContentLoaded', loadProducts);
     </script>
 </body>
 </html>
