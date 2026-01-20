@@ -30,10 +30,11 @@
     <div id="dashboard-screen" class="hidden">
         <nav class="bg-[#660066] text-white p-4 shadow-lg sticky top-0 z-50">
             <div class="container mx-auto flex justify-between items-center">
-                <div class="flex items-center gap-3">
+                <a href="/" target="_blank" title="Ir para a Loja (Abre nova aba)" class="flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
                     <img src="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/logo-f.png" class="h-8 bg-white rounded-full p-1">
-                    <h1 class="font-bold text-xl">Dashboard</h1>
-                </div>
+                    <h1 class="font-bold text-xl">Dashboard <span class="text-xs font-normal opacity-70 ml-1">(Ver Loja ↗)</span></h1>
+                </a>
+                
                 <button onclick="logout()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded text-sm transition">Sair</button>
             </div>
         </nav>
@@ -173,7 +174,7 @@
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('dashboard-screen').classList.remove('hidden');
             loadData();
-            loadSalesData(); // Carrega a lista de clientes
+            loadSalesData();
         }
 
         async function logout() {
@@ -229,12 +230,11 @@
             `}).join('');
         }
 
-        // --- NOVA FUNÇÃO: LISTA DE VENDAS E REENVIO ---
+        // --- LISTA DE VENDAS E REENVIO ---
         async function loadSalesData() {
             const tbody = document.getElementById('sales-table-body');
             tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">Carregando vendas...</td></tr>';
 
-            // Pega as últimas 50 vendas aprovadas e junta com a tabela products
             const { data: sales, error } = await adminClient
                 .from('sales')
                 .select('*, products(title)')
