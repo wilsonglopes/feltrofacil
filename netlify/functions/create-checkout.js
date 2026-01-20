@@ -5,10 +5,14 @@ exports.handler = async function(event) {
   try {
     const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
     const preference = new Preference(client);
-    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+    
+    // CORREÇÃO AQUI: Trocamos ANON_KEY por SERVICE_KEY (que já está configurada no Netlify)
+    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
     // Agora esperamos uma LISTA de IDs (cartItems)
-    const { cartItems } = JSON.parse(event.body);
+    const bodyReq = JSON.parse(event.body);
+    // Garante que funciona mesmo se vier no formato antigo (productId único) ou novo (cartItems array)
+    const cartItems = bodyReq.cartItems || [bodyReq.productId];
 
     if (!cartItems || cartItems.length === 0) throw new Error('Carrinho vazio.');
 
@@ -25,7 +29,7 @@ exports.handler = async function(event) {
     products.forEach(p => totalAmount += p.price);
 
     // Cria a preferência no Mercado Pago
-    const body = {
+    const mpBody = {
       items: [{
         id: "carrinho-varios",
         title: `Compra Feltro Fácil (${products.length} itens)`,
@@ -40,18 +44,18 @@ exports.handler = async function(event) {
       auto_return: "approved",
     };
 
-    const result = await preference.create({ body });
+    const result = await preference.create({ body: mpBody });
 
     return {
       statusCode: 200,
       body: JSON.stringify({ 
         preferenceId: result.id, 
-        amount: totalAmount // Devolve o total para o frontend mostrar
+        amount: totalAmount 
       }),
     };
 
   } catch (error) {
-    console.error(error);
+    console.error("Erro no checkout:", error);
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
   }
 };
