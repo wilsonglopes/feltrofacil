@@ -11,6 +11,7 @@ exports.handler = async function(event) {
     const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
     const payment = new Payment(client);
 
+    // 1. Captura ID
     const queryParams = event.queryStringParameters;
     let paymentId = queryParams?.id || queryParams?.['data.id'];
     if (!paymentId && event.body) {
@@ -19,48 +20,43 @@ exports.handler = async function(event) {
     
     if (!paymentId) return { statusCode: 200, body: 'Sem ID.' };
 
+    // 2. Consulta Status no Mercado Pago
     const paymentData = await payment.get({ id: paymentId });
+    console.log(`💳 Status do ID ${paymentId}: ${paymentData.status}`);
     
     if (paymentData.status === 'approved') {
         
-        // --- TRAVA DE TEMPO (TIME LOCK) ---
-        // 1. Tenta inserir a trava
+        // --- TRAVA DE SEGURANÇA INTELIGENTE 2.0 ---
+        // Tenta criar a trava
         const { error: lockError } = await supabase
             .from('processed_webhooks')
             .insert({ payment_id: String(paymentId) });
 
         if (lockError) {
-            // Se já existe, vamos ver QUANDO foi criada
-            const { data: existingLock } = await supabase
-                .from('processed_webhooks')
-                .select('created_at')
-                .eq('payment_id', String(paymentId))
-                .maybeSingle();
+            // Se deu erro porque já existe a trava, vamos verificar se foi um "Zumbi"
+            console.log(`⚠️ Trava encontrada para ${paymentId}. Verificando se é real...`);
+            
+            // Pergunta: "Tem venda salva para esse ID?"
+            const { data: existingSales } = await supabase
+                .from('sales')
+                .select('id')
+                .eq('payment_id', String(paymentId));
 
-            if (existingLock) {
-                const lockTime = new Date(existingLock.created_at).getTime();
-                const now = new Date().getTime();
-                const diffMinutes = (now - lockTime) / 1000 / 60;
-
-                // Se a trava tem menos de 5 minutos, o outro processo ainda está rodando.
-                // NÃO MEXA!
-                if (diffMinutes < 5) {
-                    console.log(`🛑 Trava RECENTE (${diffMinutes.toFixed(1)} min). Outro processo em andamento. Parando.`);
-                    return { statusCode: 200, body: 'Duplicata evitada.' };
-                }
-                
-                // Se a trava é velha (> 5 min), aí sim assumimos que o anterior falhou (Zumbi).
-                console.log(`🧟 Trava ANTIGA detectada (${diffMinutes.toFixed(1)} min). Retomando processo...`);
-            } else {
-                // Caso raro onde dá erro de insert mas não consegue ler a trava
-                console.log("⚠️ Erro na trava estranho, mas vamos seguir para garantir entrega.");
+            // Se JÁ TEM venda salva, aí sim é duplicidade real. Paramos.
+            if (existingSales && existingSales.length > 0) {
+                console.log(`🛑 Vendas já confirmadas. Parando para evitar e-mail duplo.`);
+                return { statusCode: 200, body: 'Duplicata real confirmada.' };
             }
+
+            // Se NÃO TEM venda, a trava é falsa (o código morreu antes de salvar). CONTINUAMOS!
+            console.log(`🧟 Trava Zumbi detectada! (Trava existe mas Vendas não). Processando...`);
         }
-        // -----------------------------------
+        // -------------------------------------------
 
         const customerEmail = paymentData.metadata?.customer_email || paymentData.payer.email;
         const itemsIdsString = paymentData.metadata?.items_ids; 
         
+        // Garante a lista de produtos (Fallback para external_reference)
         let productIds = [];
         if (itemsIdsString) {
             productIds = itemsIdsString.split(',');
@@ -68,10 +64,14 @@ exports.handler = async function(event) {
             productIds = [paymentData.external_reference];
         }
 
-        if (productIds.length === 0) return { statusCode: 200, body: 'Sem produtos.' };
+        if (productIds.length === 0) {
+             console.error("❌ Nenhum produto identificado na venda.");
+             return { statusCode: 200, body: 'Erro: Sem produtos.' };
+        }
 
-        console.log(`📦 Processando itens: ${productIds.join(', ')}`);
+        console.log(`📦 Processando itens: ${productIds.join(', ')} para ${customerEmail}`);
 
+        // 3. Busca produtos
         const { data: products } = await supabase
             .from('products')
             .select('*')
@@ -81,15 +81,20 @@ exports.handler = async function(event) {
 
         let linksHtml = "";
         
+        // 4. Salva as vendas e Gera Links
         for (const product of products) {
-            await supabase.from('sales').insert({
+            // Insere a venda
+            const { error: insertError } = await supabase.from('sales').insert({
                 payment_id: String(paymentId),
                 customer_email: customerEmail,
                 product_id: product.id,
                 amount: product.price,
                 status: 'approved'
-            }).catch(err => console.log(`Venda já existe (ok): ${err.message}`));
+            });
 
+            if (insertError) console.log(`Nota: Erro ao salvar venda (pode já existir): ${insertError.message}`);
+
+            // Gera o Link
             const { data: signedUrlData } = await supabase
                 .storage.from('apostilas').createSignedUrl(product.pdf_filename, 604800);
 
@@ -101,6 +106,7 @@ exports.handler = async function(event) {
             `;
         }
 
+        // 5. Envia o E-mail
         console.log(`📧 Enviando e-mail...`);
         await resend.emails.send({
             from: 'Feltro Fácil <nao-responda@loja.feltrofacil.com.br>', 
@@ -119,13 +125,14 @@ exports.handler = async function(event) {
             `
         });
         
+        console.log("✅ Sucesso Total.");
         return { statusCode: 200, body: 'Sucesso' };
     }
 
     return { statusCode: 200, body: 'Ok' };
 
   } catch (error) {
-    console.error('ERRO:', error);
+    console.error('❌ ERRO:', error);
     return { statusCode: 500, body: error.message };
   }
 };
