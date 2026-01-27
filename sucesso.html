@@ -66,15 +66,20 @@
     </div>
 
     <!-- Evento Purchase com valor dinâmico -->
-    <script>
-        const params = new URLSearchParams(window.location.search);
-        const value = parseFloat(params.get('value')) || 0;
+<script>
+window.addEventListener('load', function () {
+  if (typeof fbq === 'function') {
+    const params = new URLSearchParams(window.location.search);
+    const value = parseFloat(params.get('value')) || 0;
 
-        fbq('track', 'Purchase', {
-            value: value,
-            currency: 'BRL'
-        });
-    </script>
+    fbq('track', 'Purchase', {
+      value: value,
+      currency: 'BRL'
+    });
+  }
+});
+</script>
+
 
 </body>
 </html>
