@@ -307,7 +307,7 @@
             }
         }
 
-        // --- CRUD E MODAL (Com a Correção de Upload) ---
+        // --- CRUD E MODAL ---
         function openModal(product = null) {
             const modal = document.getElementById('product-modal');
             document.getElementById('product-form').reset();
@@ -352,9 +352,10 @@
 
                 let updates = { title, price, description };
 
-                // 1. UPLOAD DA CAPA (Com verificação de erro)
+                // 1. UPLOAD DA CAPA (MUDANÇA: Usa nome original)
                 if (coverFile) {
-                    const fileName = `cover_${Date.now()}_${coverFile.name.replace(/\s/g, '_')}`;
+                    // Removemos Date.now() e usamos apenas o nome do arquivo
+                    const fileName = coverFile.name; 
                     
                     const { data, error } = await adminClient.storage
                         .from('capas')
@@ -366,15 +367,14 @@
                     updates.cover_image = publicUrl;
                 }
 
-                // 2. UPLOAD DO PDF (Com o NOME ORIGINAL e verificação de erro)
+                // 2. UPLOAD DO PDF (MUDANÇA: Usa nome original)
                 if (pdfFile) {
-                    // Usa exatamente o nome do arquivo que está no seu computador
                     const fileName = pdfFile.name; 
                     
                     const { error } = await adminClient.storage
                         .from('apostilas')
                         .upload(fileName, pdfFile, {
-                            upsert: true, // Substitui se já existir
+                            upsert: true,
                             contentType: 'application/pdf'
                         });
                     
