@@ -146,8 +146,10 @@
     </div>
 
     <script>
+        // --- CONFIGURAÇÃO ---
         const SUPABASE_URL = 'https://tyhiqdrndpchiqkcdidv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5aGlxZHJuZHBjaGlxa2NkaWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0OTU2MzIsImV4cCI6MjA3MjA3MTYzMn0.FCETO8-cPLCGMiw5qYv3_7lSsM6GBAAY914ZXbAhZDY';
+        // --------------------
         
         const adminClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -305,7 +307,7 @@
             }
         }
 
-        // --- CRUD E MODAL ---
+        // --- CRUD E MODAL (Com a Correção de Upload) ---
         function openModal(product = null) {
             const modal = document.getElementById('product-modal');
             document.getElementById('product-form').reset();
@@ -350,31 +352,46 @@
 
                 let updates = { title, price, description };
 
+                // 1. UPLOAD DA CAPA (Com verificação de erro)
                 if (coverFile) {
-                    // Capa continua com nome único para evitar cache do navegador na imagem
                     const fileName = `cover_${Date.now()}_${coverFile.name.replace(/\s/g, '_')}`;
-                    await adminClient.storage.from('capas').upload(fileName, coverFile);
+                    
+                    const { data, error } = await adminClient.storage
+                        .from('capas')
+                        .upload(fileName, coverFile, { upsert: true });
+
+                    if (error) throw new Error("Erro na Capa: " + error.message);
+
                     const { data: { publicUrl } } = adminClient.storage.from('capas').getPublicUrl(fileName);
                     updates.cover_image = publicUrl;
                 }
 
+                // 2. UPLOAD DO PDF (Com o NOME ORIGINAL e verificação de erro)
                 if (pdfFile) {
-                    // MUDANÇA: Usamos o nome original do arquivo
+                    // Usa exatamente o nome do arquivo que está no seu computador
                     const fileName = pdfFile.name; 
                     
-                    // MUDANÇA: Adicionamos { upsert: true } para permitir atualizar
-                    await adminClient.storage.from('apostilas').upload(fileName, pdfFile, {
-                        upsert: true,
-                        contentType: 'application/pdf'
-                    });
+                    const { error } = await adminClient.storage
+                        .from('apostilas')
+                        .upload(fileName, pdfFile, {
+                            upsert: true, // Substitui se já existir
+                            contentType: 'application/pdf'
+                        });
+                    
+                    if (error) throw new Error("Erro no PDF: " + error.message);
                     
                     updates.pdf_filename = fileName;
                 }
 
-                if (id) await adminClient.from('products').update(updates).eq('id', id);
-                else {
-                    if (!coverFile || !pdfFile) throw new Error("Capa e PDF obrigatórios!");
-                    await adminClient.from('products').insert([updates]);
+                // 3. SALVAR NO BANCO
+                if (id) {
+                    const { error } = await adminClient.from('products').update(updates).eq('id', id);
+                    if (error) throw error;
+                } else {
+                    if (!coverFile || !pdfFile) throw new Error("Capa e PDF obrigatórios para novos produtos!");
+                    
+                    const { error } = await adminClient.from('products').insert([updates]);
+                    if (error) throw error;
                 }
 
                 closeModal();
@@ -382,7 +399,7 @@
                 alert("Produto salvo com sucesso!");
             } catch (err) {
                 console.error(err);
-                alert('Erro: ' + err.message);
+                alert('ERRO: ' + err.message);
             } finally {
                 btn.innerText = originalText;
                 btn.disabled = false;
