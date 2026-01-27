@@ -351,6 +351,7 @@
                 let updates = { title, price, description };
 
                 if (coverFile) {
+                    // Capa continua com nome único para evitar cache do navegador na imagem
                     const fileName = `cover_${Date.now()}_${coverFile.name.replace(/\s/g, '_')}`;
                     await adminClient.storage.from('capas').upload(fileName, coverFile);
                     const { data: { publicUrl } } = adminClient.storage.from('capas').getPublicUrl(fileName);
@@ -358,8 +359,15 @@
                 }
 
                 if (pdfFile) {
-                    const fileName = `apostila_${Date.now()}.pdf`;
-                    await adminClient.storage.from('apostilas').upload(fileName, pdfFile);
+                    // MUDANÇA: Usamos o nome original do arquivo
+                    const fileName = pdfFile.name; 
+                    
+                    // MUDANÇA: Adicionamos { upsert: true } para permitir atualizar
+                    await adminClient.storage.from('apostilas').upload(fileName, pdfFile, {
+                        upsert: true,
+                        contentType: 'application/pdf'
+                    });
+                    
                     updates.pdf_filename = fileName;
                 }
 
@@ -371,7 +379,9 @@
 
                 closeModal();
                 loadData(); 
+                alert("Produto salvo com sucesso!");
             } catch (err) {
+                console.error(err);
                 alert('Erro: ' + err.message);
             } finally {
                 btn.innerText = originalText;
