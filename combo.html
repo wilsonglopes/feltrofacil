@@ -55,8 +55,9 @@
                     <div class="absolute top-4 left-4 bg-red-500 text-white font-bold px-3 py-1 rounded-full text-sm shadow-md animate-bounce">
                         OFERTA ESPECIAL
                     </div>
-                    <img src="https://placehold.co/600x800?text=Capa+do+Super+Combo" 
+                    <img src="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/capa_combo.jpeg" 
                          id="combo-image"
+                         alt="Capa do Combo"
                          class="w-full h-auto object-cover rounded-lg shadow-lg transform hover:scale-105 transition duration-500">
                 </div>
 
@@ -78,7 +79,7 @@
 
                     <div class="mb-8">
                         <p class="text-gray-400 text-sm line-through">De R$ 199,90 por apenas:</p>
-                        <p class="text-5xl font-bold text-brand">R$ 49,99</p>
+                        <p class="text-5xl font-bold text-brand">R$ 57,00</p>
                         <p class="text-green-600 text-sm font-bold mt-1">✓ Pagamento único e seguro</p>
                     </div>
 
@@ -147,11 +148,8 @@
     </div>
 
     <script>
-        // CONFIGURAÇÃO DO PRODUTO (PREENCHA AQUI!)
-        // ==========================================
-        const COMBO_PRODUCT_ID = 'COLE_O_ID_DO_PRODUTO_AQUI'; 
-        // Exemplo: '123e4567-e89b-12d3-a456-426614174000'
-        // ==========================================
+        // CONFIGURAÇÃO DO PRODUTO
+        const COMBO_PRODUCT_ID = '2ebbee8c-40d0-435d-91e3-37f443a45f14'; 
 
         const SUPABASE_URL = 'https://tyhiqdrndpchiqkcdidv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5aGlxZHJuZHBjaGlxa2NkaWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0OTU2MzIsImV4cCI6MjA3MjA3MTYzMn0.FCETO8-cPLCGMiw5qYv3_7lSsM6GBAAY914ZXbAhZDY';
@@ -163,22 +161,8 @@
         let currentBrickController = null;
         let paymentCheckInterval = null;
 
-        // Ao carregar a página, busca a imagem real do produto no banco (Opcional, só pra ficar bonito)
-        async function loadComboImage() {
-            if(COMBO_PRODUCT_ID === 'COLE_O_ID_DO_PRODUTO_AQUI') return; // Ignora se não configurou
-            const { data } = await supabaseClient.from('products').select('cover_image').eq('id', COMBO_PRODUCT_ID).single();
-            if(data && data.cover_image) {
-                document.getElementById('combo-image').src = data.cover_image;
-            }
-        }
-        loadComboImage();
-
         // --- INÍCIO DO PROCESSO DE COMPRA ---
         function startComboCheckout() {
-            if(COMBO_PRODUCT_ID === 'COLE_O_ID_DO_PRODUTO_AQUI') {
-                alert("ERRO: Configure o ID do produto no código da página combo.html");
-                return;
-            }
             openPaymentChoice();
         }
 
@@ -198,7 +182,7 @@
         // --- OPÇÃO 1: BRASIL (MERCADO PAGO) ---
         function payWithMercadoPago() {
             closePaymentChoice();
-            initCheckout([COMBO_PRODUCT_ID]); // Manda o ID fixo do combo
+            initCheckout([COMBO_PRODUCT_ID]); 
         }
 
         // --- OPÇÃO 2: INTERNACIONAL (STRIPE) ---
@@ -216,7 +200,6 @@
             btn.disabled = true;
 
             try {
-                // Manda o ID fixo do combo
                 const itemsToSend = [{ id: COMBO_PRODUCT_ID }];
 
                 const response = await fetch('/.netlify/functions/create-stripe-checkout', {
