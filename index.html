@@ -389,5 +389,54 @@
 
         document.addEventListener('DOMContentLoaded', loadProducts);
     </script>
+<div id="promo-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" onclick="closePromo()"></div>
+        
+        <div class="relative bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all scale-100">
+            <button onclick="closePromo()" class="absolute top-2 right-2 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 font-bold shadow-md z-10">✕</button>
+            
+            <a id="promo-link" href="#" class="block">
+                <img id="promo-img" src="" alt="Promoção" class="w-full h-auto object-cover">
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Lógica para mostrar o Pop-up
+        async function checkPromo() {
+            // Verifica se o usuário já fechou o popup hoje (para não ser chato)
+            if (sessionStorage.getItem('promo_closed')) return;
+
+            const { data } = await supabase.from('popup_settings').select('*').eq('id', 1).single();
+            
+            if (data && data.is_active && data.image_url) {
+                document.getElementById('promo-img').src = data.image_url;
+                
+                if (data.link_url) {
+                    document.getElementById('promo-link').href = data.link_url;
+                } else {
+                    document.getElementById('promo-link').removeAttribute('href'); // Sem link, vira só imagem
+                    document.getElementById('promo-link').style.cursor = 'default';
+                }
+
+                // Mostra o modal
+                const modal = document.getElementById('promo-modal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        function closePromo() {
+            const modal = document.getElementById('promo-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            // Marca na sessão que já viu (só aparece de novo se fechar o navegador e abrir de novo)
+            sessionStorage.setItem('promo_closed', 'true');
+        }
+
+        // Chama a função ao carregar
+        window.addEventListener('load', checkPromo);
+    </script>
+    
 </body>
 </html>
