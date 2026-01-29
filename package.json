@@ -1,9 +1,12 @@
 {
-  "name": "loja-feltro-facil",
+  "name": "feltro-facil-loja",
   "version": "1.0.0",
+  "description": "Loja de Apostilas",
+  "main": "index.html",
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
-    "mercadopago": "^2.0.8",
-    "resend": "^3.2.0"
+    "mercadopago": "^2.0.0",
+    "resend": "^2.0.0",
+    "stripe": "^14.14.0"
   }
 }
