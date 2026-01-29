@@ -41,9 +41,19 @@
 </head>
 <body class="text-stone-700"> 
 
-    <header class="bg-white shadow-sm py-4">
-        <div class="container mx-auto px-4 text-center">
-            <img src="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/logo-f.png" alt="Logo" class="h-10 mx-auto">
+    <header class="bg-white/95 backdrop-blur shadow-sm py-3 sticky top-0 z-40 border-b border-purple-50">
+        <div class="container mx-auto px-4 flex justify-between items-center relative">
+            <a href="index.html" class="flex items-center gap-2 text-stone-500 hover:text-[#660066] transition font-bold text-sm bg-gray-50 hover:bg-purple-50 px-4 py-2 rounded-full border border-gray-100 shadow-sm">
+                <i class="fas fa-arrow-left"></i> 
+                <span class="hidden md:inline">Voltar para a Loja</span>
+                <span class="md:hidden">Voltar</span>
+            </a>
+
+            <div class="absolute left-1/2 transform -translate-x-1/2">
+                <img src="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/logo-f.png" alt="Logo" class="h-8 md:h-10 w-auto">
+            </div>
+
+            <div class="w-20 hidden md:block"></div>
         </div>
     </header>
 
@@ -147,7 +157,7 @@
     </div>
 
     <script>
-        // CONFIGURAÇÃO DO PRODUTO
+        // CONFIGURAÇÃO DO PRODUTO (ID MANTIDO)
         const COMBO_PRODUCT_ID = '2ebbee8c-40d0-435d-91e3-37f443a45f14'; 
 
         const SUPABASE_URL = 'https://tyhiqdrndpchiqkcdidv.supabase.co';
@@ -162,6 +172,10 @@
 
         // --- INÍCIO DO PROCESSO DE COMPRA ---
         function startComboCheckout() {
+            if(!COMBO_PRODUCT_ID || COMBO_PRODUCT_ID.includes('COLE_')) {
+                alert("ERRO: Configure o ID do produto no código da página combo.html");
+                return;
+            }
             openPaymentChoice();
         }
 
