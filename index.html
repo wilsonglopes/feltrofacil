@@ -437,6 +437,40 @@
         // Chama a função ao carregar
         window.addEventListener('load', checkPromo);
     </script>
+    <div id="payment-choice-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative animate-fade-in">
+            <button onclick="closePaymentChoice()" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 font-bold text-xl">&times;</button>
+            
+            <h3 class="text-xl font-bold text-center text-[#660066] mb-2">Como deseja pagar?</h3>
+            <p class="text-center text-gray-500 text-sm mb-6">Escolha a melhor opção para sua localização.</p>
+
+            <div class="space-y-3">
+                <button onclick="payWithMercadoPago()" class="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-[#009EE3] hover:bg-blue-50 transition group">
+                    <div class="flex items-center gap-3">
+                        <img src="https://img.icons8.com/color/48/brazil.png" class="w-8 h-8">
+                        <div class="text-left">
+                            <p class="font-bold text-gray-800 group-hover:text-[#009EE3]">Brasil</p>
+                            <p class="text-xs text-gray-500">Pix, Boleto, Cartão Nacional</p>
+                        </div>
+                    </div>
+                    <span class="text-[#009EE3]">➔</span>
+                </button>
+
+                <button onclick="payWithStripe()" class="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-[#635BFF] hover:bg-indigo-50 transition group">
+                    <div class="flex items-center gap-3">
+                        <img src="https://img.icons8.com/color/48/globe.png" class="w-8 h-8">
+                        <div class="text-left">
+                            <p class="font-bold text-gray-800 group-hover:text-[#635BFF]">Internacional</p>
+                            <p class="text-xs text-gray-500">Cartão de Crédito (Mundo todo)</p>
+                        </div>
+                    </div>
+                    <span class="text-[#635BFF]">➔</span>
+                </button>
+            </div>
+            
+            <p class="text-center text-xs text-gray-400 mt-4">Transação segura e criptografada.</p>
+        </div>
+    </div>
     
 </body>
 </html>
