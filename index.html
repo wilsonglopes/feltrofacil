@@ -26,26 +26,24 @@
         .cart-bounce { animation: bounce 0.5s; }
     </style>
 
-    <!-- Facebook Pixel Code -->
-<script>
-  !function(f,b,e,v,n,t,s)
-  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-  n.queue=[];t=b.createElement(e);t.async=!0;
-  t.src=v;s=b.getElementsByTagName(e)[0];
-  s.parentNode.insertBefore(t,s)}(window, document,'script',
-  'https://connect.facebook.net/en_US/fbevents.js');
-  fbq('init', '495106448108869');
-  fbq('track', 'PageView');
-</script>
-<noscript><img height="1" width="1" style="display:none"
-  src="https://www.facebook.com/tr?id=495106448108869&ev=PageView&noscript=1"
-/></noscript>
-<!-- End Facebook Pixel Code -->
-    
-</head>
-<body class="text-stone-700 pb-20"> <header class="bg-white/90 backdrop-blur shadow-sm sticky top-0 z-40">
+    <script>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '495106448108869');
+      fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+      src="https://www.facebook.com/tr?id=495106448108869&ev=PageView&noscript=1"
+    /></noscript>
+    </head>
+<body class="text-stone-700 pb-20"> 
+    <header class="bg-white/90 backdrop-blur shadow-sm sticky top-0 z-40">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <a href="index.html" class="hover:opacity-80 transition-opacity">
@@ -94,6 +92,41 @@
         </div>
     </footer>
 
+    <div id="payment-choice-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative animate-fade-in">
+            <button onclick="closePaymentChoice()" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 font-bold text-xl">&times;</button>
+            
+            <h3 class="text-xl font-bold text-center text-[#660066] mb-2">Como deseja pagar?</h3>
+            <p class="text-center text-gray-500 text-sm mb-6">Escolha a melhor opção para sua localização.</p>
+
+            <div class="space-y-3">
+                <button onclick="payWithMercadoPago()" class="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-[#009EE3] hover:bg-blue-50 transition group">
+                    <div class="flex items-center gap-3">
+                        <img src="https://img.icons8.com/color/48/brazil.png" class="w-8 h-8">
+                        <div class="text-left">
+                            <p class="font-bold text-gray-800 group-hover:text-[#009EE3]">Brasil</p>
+                            <p class="text-xs text-gray-500">Pix, Boleto, Cartão Nacional</p>
+                        </div>
+                    </div>
+                    <span class="text-[#009EE3]">➔</span>
+                </button>
+
+                <button onclick="payWithStripe()" class="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-[#635BFF] hover:bg-indigo-50 transition group">
+                    <div class="flex items-center gap-3">
+                        <img src="https://img.icons8.com/color/48/globe.png" class="w-8 h-8">
+                        <div class="text-left">
+                            <p class="font-bold text-gray-800 group-hover:text-[#635BFF]">Internacional</p>
+                            <p class="text-xs text-gray-500">Cartão de Crédito (Mundo todo)</p>
+                        </div>
+                    </div>
+                    <span class="text-[#635BFF]">➔</span>
+                </button>
+            </div>
+            
+            <p class="text-center text-xs text-gray-400 mt-4">Transação segura e criptografada.</p>
+        </div>
+    </div>
+
     <div id="checkout-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white w-full max-w-md rounded-xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-[#660066] p-4 flex justify-between items-center shrink-0">
@@ -126,6 +159,18 @@
         </div>
     </div>
 
+    <div id="promo-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" onclick="closePromo()"></div>
+        
+        <div class="relative bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all scale-100">
+            <button onclick="closePromo()" class="absolute top-2 right-2 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 font-bold shadow-md z-10">✕</button>
+            
+            <a id="promo-link" href="#" class="block">
+                <img id="promo-img" src="" alt="Promoção" class="w-full h-auto object-cover">
+            </a>
+        </div>
+    </div>
+
     <script>
         const SUPABASE_URL = 'https://tyhiqdrndpchiqkcdidv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5aGlxZHJuZHBjaGlxa2NkaWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0OTU2MzIsImV4cCI6MjA3MjA3MTYzMn0.FCETO8-cPLCGMiw5qYv3_7lSsM6GBAAY914ZXbAhZDY';
@@ -137,28 +182,31 @@
         let currentBrickController = null;
         let paymentCheckInterval = null;
 
-        // --- LÓGICA DO CARRINHO ---
-        let cart = []; // Armazena objetos {id, title, price}
+        // --- VARIÁVEIS DE ESTADO PARA O CHECKOUT ---
+        let cart = []; 
+        let pendingCheckoutIds = []; // Guarda os IDs que o cliente quer comprar enquanto ele escolhe o método
+        let pendingIsCartMode = false; // Guarda se é compra direta ou carrinho
 
+        // --- LÓGICA DO CARRINHO ---
         function addToCart(id, title, price) {
-            // Verifica se já está no carrinho
             if (cart.some(item => item.id === id)) {
                 alert("Este item já está no carrinho!");
                 return;
             }
-
             cart.push({ id, title, price: parseFloat(price) });
             updateCartUI();
             
             // Efeito visual
             const btn = document.getElementById(`btn-${id}`);
-            const originalText = btn.innerText;
-            btn.innerText = "Adicionado!";
-            btn.classList.add("bg-green-600");
-            setTimeout(() => {
-                btn.innerText = originalText;
-                btn.classList.remove("bg-green-600");
-            }, 1000);
+            if(btn) {
+                const originalText = btn.innerText;
+                btn.innerText = "Adicionado!";
+                btn.classList.add("bg-green-600");
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.classList.remove("bg-green-600");
+                }, 1000);
+            }
         }
 
         function updateCartUI() {
@@ -180,21 +228,99 @@
             totalEl.innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
         }
 
+        // --- CLICK NO CARRINHO (Flutuante) ---
         async function openCartCheckout() {
-            if (cart.length === 0) return;
-            // Pega APENAS os IDs para mandar pro backend
-            const cartIds = cart.map(item => item.id);
-            initCheckout(cartIds, true);
+            if (cart.length === 0) return alert('Seu carrinho está vazio!');
+            
+            // 1. Guarda os dados temporariamente
+            pendingCheckoutIds = cart.map(item => item.id);
+            pendingIsCartMode = true;
+
+            // 2. Abre a escolha de pagamento
+            openPaymentChoice();
         }
 
-        // --- COMPRA DIRETA (Funciona como um carrinho de 1 item) ---
+        // --- CLICK EM "COMPRAR" (Botão Roxo) ---
         async function buyNow(id, title, price) {
             trackClick(id);
-            // Se clicar em comprar agora, limpamos o carrinho e colocamos só este item?
-            // Ou adicionamos ao carrinho e abrimos?
-            // Melhor: Tratamos como um checkout isolado para ser rápido, MAS visualmente podemos adicionar.
-            // Para simplificar a lógica do backend, vamos mandar como um array de 1 item.
-            initCheckout([id], false); 
+            
+            // 1. Guarda os dados temporariamente
+            pendingCheckoutIds = [id];
+            pendingIsCartMode = false;
+
+            // 2. Abre a escolha de pagamento
+            openPaymentChoice();
+        }
+
+        // --- MODAL DE ESCOLHA (BRASIL VS INTERNACIONAL) ---
+        function openPaymentChoice() {
+            const modal = document.getElementById('payment-choice-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closePaymentChoice() {
+            const modal = document.getElementById('payment-choice-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // --- OPÇÃO 1: BRASIL (MERCADO PAGO) ---
+        function payWithMercadoPago() {
+            closePaymentChoice();
+            // Chama a função original do Mercado Pago com os dados que guardamos
+            initCheckout(pendingCheckoutIds, pendingIsCartMode);
+        }
+
+        // --- OPÇÃO 2: INTERNACIONAL (STRIPE) ---
+        async function payWithStripe() {
+            // Seleciona o botão dentro do modal para dar feedback visual
+            const btn = document.querySelector("#payment-choice-modal button[onclick='payWithStripe()']");
+            const originalText = btn.innerHTML; // Guarda o ícone e texto originais
+            
+            // Pede o e-mail (necessário para o Stripe enviar o produto depois)
+            let email = prompt("Please enter your email address to receive the files:\n(Por favor, digite seu e-mail para receber os arquivos:)");
+            
+            if (!email || !email.includes('@')) {
+                alert("Valid email is required to receive the products.\n(E-mail válido é necessário para receber os produtos.)");
+                return;
+            }
+
+            btn.innerHTML = "Loading..."; // Feedback
+            btn.disabled = true;
+
+            try {
+                // Prepara os itens para o Stripe (precisa mandar objeto com id)
+                // Se for carrinho, usa o cart global. Se for compra direta, cria array na hora.
+                let itemsToSend = [];
+                if (pendingIsCartMode) {
+                    itemsToSend = cart; 
+                } else {
+                    // Como no buyNow só guardamos o ID, precisamos mandar o objeto simples
+                    itemsToSend = [{ id: pendingCheckoutIds[0] }];
+                }
+
+                const response = await fetch('/.netlify/functions/create-stripe-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items: itemsToSend, customerEmail: email })
+                });
+
+                const data = await response.json();
+                
+                if (data.url) {
+                    // Redireciona para o checkout seguro do Stripe
+                    window.location.href = data.url; 
+                } else {
+                    throw new Error(data.error || "Stripe Error");
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert("Connection error. Please try again.\n(Erro de conexão. Tente novamente.)");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
         }
 
         // --- RASTREAMENTO ---
@@ -238,7 +364,7 @@
             `).join('');
         }
 
-        // --- CHECKOUT UNIFICADO ---
+        // --- CHECKOUT DO MERCADO PAGO (BRICK) ---
         async function initCheckout(cartIds, isCartMode) {
             const modal = document.getElementById('checkout-modal');
             const container = document.getElementById('paymentBrick_container');
@@ -249,14 +375,13 @@
             if (paymentCheckInterval) clearInterval(paymentCheckInterval);
 
             container.innerHTML = ''; 
-            itemsList.classList.add('hidden'); // Esconde lista por enquanto
+            itemsList.classList.add('hidden');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             loading.classList.remove('hidden');
             document.getElementById('checking-payment').classList.add('hidden');
 
             try {
-                // Chama o backend enviando a LISTA (cartItems)
                 const response = await fetch('/.netlify/functions/create-checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -301,13 +426,12 @@
                                 fetch('/.netlify/functions/process-payment', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ formData, cartItems: cartIds }) // Envia a lista aqui também
+                                    body: JSON.stringify({ formData, cartItems: cartIds })
                                 })
                                 .then((response) => response.json())
                                 .then((response) => {
                                     if (response.id) {
                                         resolve();
-                                        // Limpa o carrinho se der sucesso
                                         if (isCartMode) { cart = []; updateCartUI(); }
                                         showStatusScreen(response.id);
                                         monitorPayment(response.id);
@@ -338,7 +462,7 @@
 
         async function showStatusScreen(paymentId) {
             const container = document.getElementById('paymentBrick_container');
-            document.getElementById('checkout-items-list').classList.add('hidden'); // Esconde resumo no sucesso
+            document.getElementById('checkout-items-list').classList.add('hidden');
             if (currentBrickController) currentBrickController.unmount();
             container.innerHTML = ''; 
 
@@ -364,7 +488,6 @@
                     return;
                 }
 
-                // Verifica se ALGUM produto desse pagamento já foi salvo
                 const { data, error } = await supabaseClient
                     .from('sales')
                     .select('id')
@@ -387,27 +510,11 @@
             if (currentBrickController) { currentBrickController.unmount(); currentBrickController = null; }
         }
 
-        document.addEventListener('DOMContentLoaded', loadProducts);
-    </script>
-<div id="promo-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" onclick="closePromo()"></div>
-        
-        <div class="relative bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all scale-100">
-            <button onclick="closePromo()" class="absolute top-2 right-2 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 font-bold shadow-md z-10">✕</button>
-            
-            <a id="promo-link" href="#" class="block">
-                <img id="promo-img" src="" alt="Promoção" class="w-full h-auto object-cover">
-            </a>
-        </div>
-    </div>
-
-    <script>
-        // Lógica para mostrar o Pop-up
+        // --- LÓGICA DO POP-UP PROMOCIONAL ---
         async function checkPromo() {
-            // Verifica se o usuário já fechou o popup hoje (para não ser chato)
             if (sessionStorage.getItem('promo_closed')) return;
 
-            const { data } = await supabase.from('popup_settings').select('*').eq('id', 1).single();
+            const { data } = await supabaseClient.from('popup_settings').select('*').eq('id', 1).single();
             
             if (data && data.is_active && data.image_url) {
                 document.getElementById('promo-img').src = data.image_url;
@@ -415,11 +522,10 @@
                 if (data.link_url) {
                     document.getElementById('promo-link').href = data.link_url;
                 } else {
-                    document.getElementById('promo-link').removeAttribute('href'); // Sem link, vira só imagem
+                    document.getElementById('promo-link').removeAttribute('href');
                     document.getElementById('promo-link').style.cursor = 'default';
                 }
 
-                // Mostra o modal
                 const modal = document.getElementById('promo-modal');
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
@@ -430,47 +536,13 @@
             const modal = document.getElementById('promo-modal');
             modal.classList.add('hidden');
             modal.classList.remove('flex');
-            // Marca na sessão que já viu (só aparece de novo se fechar o navegador e abrir de novo)
             sessionStorage.setItem('promo_closed', 'true');
         }
 
-        // Chama a função ao carregar
-        window.addEventListener('load', checkPromo);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProducts();
+            checkPromo();
+        });
     </script>
-    <div id="payment-choice-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative animate-fade-in">
-            <button onclick="closePaymentChoice()" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 font-bold text-xl">&times;</button>
-            
-            <h3 class="text-xl font-bold text-center text-[#660066] mb-2">Como deseja pagar?</h3>
-            <p class="text-center text-gray-500 text-sm mb-6">Escolha a melhor opção para sua localização.</p>
-
-            <div class="space-y-3">
-                <button onclick="payWithMercadoPago()" class="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-[#009EE3] hover:bg-blue-50 transition group">
-                    <div class="flex items-center gap-3">
-                        <img src="https://img.icons8.com/color/48/brazil.png" class="w-8 h-8">
-                        <div class="text-left">
-                            <p class="font-bold text-gray-800 group-hover:text-[#009EE3]">Brasil</p>
-                            <p class="text-xs text-gray-500">Pix, Boleto, Cartão Nacional</p>
-                        </div>
-                    </div>
-                    <span class="text-[#009EE3]">➔</span>
-                </button>
-
-                <button onclick="payWithStripe()" class="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-[#635BFF] hover:bg-indigo-50 transition group">
-                    <div class="flex items-center gap-3">
-                        <img src="https://img.icons8.com/color/48/globe.png" class="w-8 h-8">
-                        <div class="text-left">
-                            <p class="font-bold text-gray-800 group-hover:text-[#635BFF]">Internacional</p>
-                            <p class="text-xs text-gray-500">Cartão de Crédito (Mundo todo)</p>
-                        </div>
-                    </div>
-                    <span class="text-[#635BFF]">➔</span>
-                </button>
-            </div>
-            
-            <p class="text-center text-xs text-gray-400 mt-4">Transação segura e criptografada.</p>
-        </div>
-    </div>
-    
 </body>
 </html>
