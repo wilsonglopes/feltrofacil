@@ -56,6 +56,34 @@
                 </div>
             </div>
 
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-10">
+                <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    📢 Configurar Pop-up de Promoção
+                </h2>
+                <form id="popup-form" class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Imagem do Banner</label>
+                        <input type="file" id="popup-file" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 transition">
+                        <p class="text-xs text-gray-400 mt-1" id="current-popup-img">Nenhuma imagem selecionada</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Link ao clicar (Opcional)</label>
+                        <input type="text" id="popup-link" placeholder="Ex: https://loja.../produto-x" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-200 outline-none">
+                    </div>
+
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="popup-active" class="w-5 h-5 accent-[#660066]">
+                            <label for="popup-active" class="text-sm font-semibold text-gray-700">Ativar Pop-up</label>
+                        </div>
+                        <button type="submit" id="btn-save-popup" class="flex-1 bg-gray-800 hover:bg-gray-900 text-white py-2.5 rounded-lg font-bold transition">
+                            Salvar Configuração
+                        </button>
+                    </div>
+                </form>
+            </div>
             <div class="flex justify-between items-center mb-6 mt-10">
                 <h2 class="text-2xl font-bold text-gray-800">Meus Produtos</h2>
                 <button onclick="openModal()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-md flex items-center gap-2 transition transform hover:scale-105">
@@ -177,6 +205,7 @@
             document.getElementById('dashboard-screen').classList.remove('hidden');
             loadData();
             loadSalesData();
+            loadPopupSettings(); // <--- CARREGA AS CONFIGS DO POPUP
         }
 
         async function logout() {
@@ -413,6 +442,62 @@
             await adminClient.from('products').delete().eq('id', id);
             loadData();
         }
+
+        // --- LÓGICA DO POP-UP (NOVA) ---
+        
+        // 1. Carregar Configuração Atual
+        async function loadPopupSettings() {
+            const { data, error } = await adminClient.from('popup_settings').select('*').eq('id', 1).single();
+            if (data) {
+                document.getElementById('popup-link').value = data.link_url || '';
+                document.getElementById('popup-active').checked = data.is_active;
+                if (data.image_url) {
+                    document.getElementById('current-popup-img').innerText = 'Imagem atual salva no sistema';
+                }
+            }
+        }
+
+        // 2. Salvar Configuração
+        document.getElementById('popup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-popup');
+            btn.innerText = 'Salvando...';
+            btn.disabled = true;
+
+            try {
+                const file = document.getElementById('popup-file').files[0];
+                const linkUrl = document.getElementById('popup-link').value;
+                const isActive = document.getElementById('popup-active').checked;
+                
+                let updates = { 
+                    link_url: linkUrl, 
+                    is_active: isActive 
+                };
+
+                // Upload da imagem (se houver nova)
+                if (file) {
+                    const fileName = `banner_${Date.now()}.jpg`; // Nome único para evitar cache
+                    const { error: uploadError } = await adminClient.storage.from('banners').upload(fileName, file);
+                    if (uploadError) throw uploadError;
+
+                    const { data: { publicUrl } } = adminClient.storage.from('banners').getPublicUrl(fileName);
+                    updates.image_url = publicUrl;
+                }
+
+                const { error } = await adminClient.from('popup_settings').update(updates).eq('id', 1);
+                if (error) throw error;
+
+                alert('Pop-up atualizado com sucesso!');
+                loadPopupSettings();
+
+            } catch (err) {
+                console.error(err);
+                alert('Erro ao salvar pop-up: ' + err.message);
+            } finally {
+                btn.innerText = 'Salvar Configuração';
+                btn.disabled = false;
+            }
+        });
 
         checkSession();
     </script>
