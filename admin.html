@@ -247,8 +247,11 @@
             document.getElementById('stat-sales').innerText = totalSalesCount;
             document.getElementById('stat-clicks').innerText = totalClicksCount;
 
-            tbody.innerHTML = products.map(p => {
+tbody.innerHTML = products.map(p => {
                 const s = stats[p.id];
+                // Tratamento para evitar erro com aspas no JSON
+                const productData = JSON.stringify(p).replace(/'/g, "&#39;");
+                
                 return `
                 <tr class="hover:bg-gray-50 border-b transition">
                     <td class="p-4 flex items-center gap-3">
@@ -257,9 +260,24 @@
                     </td>
                     <td class="p-4 text-center text-gray-600">R$ ${p.price}</td>
                     <td class="p-4 text-center font-bold text-blue-600 bg-blue-50 rounded-lg">${s.sales}</td>
-                    <td class="p-4 text-right space-x-2">
-                        <button onclick='editProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="text-blue-500 hover:text-blue-700 font-medium text-sm transition">Editar</button>
-                        <button onclick="deleteProduct('${p.id}')" class="text-red-400 hover:text-red-600 font-medium text-sm transition">Excluir</button>
+                    
+                    <td class="p-4 text-right">
+                        <div class="flex justify-end gap-2">
+                            <a href="produto.html?id=${p.id}" target="_blank" 
+                               class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1 border border-gray-200" title="Ver Página">
+                               👁️ Ver
+                            </a>
+
+                            <button onclick='editProduct(${productData})' 
+                               class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1 border border-blue-200">
+                               ✏️ Editar
+                            </button>
+
+                            <button onclick="deleteProduct('${p.id}')" 
+                               class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1 border border-red-200">
+                               🗑️ Excluir
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `}).join('');
