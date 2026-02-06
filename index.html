@@ -328,7 +328,7 @@
             try { await supabaseClient.from('clicks').insert({ product_id: productId }); } catch (e) {}
         }
 
-        async function loadProducts() {
+async function loadProducts() {
             const grid = document.getElementById('products-grid');
             const { data: products, error } = await supabaseClient.from('products').select('*').order('created_at', { ascending: false });
 
@@ -336,12 +336,19 @@
 
             grid.innerHTML = products.map(product => `
                 <div class="bg-gray-50 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col group">
-                    <div class="h-64 overflow-hidden relative bg-white p-4 flex items-center justify-center border-b border-gray-100">
+                    
+                    <a href="produto.html?id=${product.id}" class="block h-64 overflow-hidden relative bg-white p-4 flex items-center justify-center border-b border-gray-100 cursor-pointer">
                         <img src="${product.cover_image}" alt="${product.title}" class="w-full h-full object-contain group-hover:scale-105 transition-transform">
-                    </div>
+                    </a>
+
                     <div class="p-6 flex-1 flex flex-col">
-                        <h3 class="font-bold text-xl mb-2 text-stone-800">${product.title}</h3>
+                        
+                        <a href="produto.html?id=${product.id}" class="hover:text-[#660066] transition">
+                            <h3 class="font-bold text-xl mb-2 text-stone-800">${product.title}</h3>
+                        </a>
+
                         <p class="text-stone-500 text-sm mb-6 flex-1 line-clamp-3">${product.description || 'Apostila PDF'}</p>
+                        
                         <div class="mt-auto pt-4 border-t border-gray-200 flex flex-col gap-3">
                             <div class="flex justify-between items-center">
                                 <p class="text-xs text-stone-400 uppercase">Investimento</p>
