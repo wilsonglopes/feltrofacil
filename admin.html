@@ -34,7 +34,6 @@
                     <img src="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/logo-f.png" class="h-8 bg-white rounded-full p-1">
                     <h1 class="font-bold text-xl">Dashboard <span class="text-xs font-normal opacity-70 ml-1">(Ver Loja ↗)</span></h1>
                 </a>
-                
                 <button onclick="logout()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded text-sm transition">Sair</button>
             </div>
         </nav>
@@ -57,33 +56,27 @@
             </div>
 
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-10">
-                <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    📢 Configurar Pop-up de Promoção
-                </h2>
+                <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">📢 Configurar Pop-up de Promoção</h2>
                 <form id="popup-form" class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-                    
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">Imagem do Banner</label>
                         <input type="file" id="popup-file" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 transition">
                         <p class="text-xs text-gray-400 mt-1" id="current-popup-img">Nenhuma imagem selecionada</p>
                     </div>
-
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">Link ao clicar (Opcional)</label>
-                        <input type="text" id="popup-link" placeholder="Ex: https://loja.../produto-x" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-200 outline-none">
+                        <input type="text" id="popup-link" placeholder="Ex: /combo.html" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-200 outline-none">
                     </div>
-
                     <div class="flex items-center gap-4">
                         <div class="flex items-center gap-2">
                             <input type="checkbox" id="popup-active" class="w-5 h-5 accent-[#660066]">
                             <label for="popup-active" class="text-sm font-semibold text-gray-700">Ativar Pop-up</label>
                         </div>
-                        <button type="submit" id="btn-save-popup" class="flex-1 bg-gray-800 hover:bg-gray-900 text-white py-2.5 rounded-lg font-bold transition">
-                            Salvar Configuração
-                        </button>
+                        <button type="submit" id="btn-save-popup" class="flex-1 bg-gray-800 hover:bg-gray-900 text-white py-2.5 rounded-lg font-bold transition">Salvar Configuração</button>
                     </div>
                 </form>
             </div>
+
             <div class="flex justify-between items-center mb-6 mt-10">
                 <h2 class="text-2xl font-bold text-gray-800">Meus Produtos</h2>
                 <button onclick="openModal()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-md flex items-center gap-2 transition transform hover:scale-105">
@@ -107,7 +100,7 @@
             </div>
 
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Últimas Vendas (Clientes)</h2>
+                <h2 class="text-2xl font-bold text-gray-800">Últimas Vendas</h2>
                 <button onclick="loadSalesData()" class="text-sm text-purple-600 hover:underline">Atualizar Lista</button>
             </div>
             <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
@@ -116,29 +109,28 @@
                         <thead class="bg-gray-50 text-gray-600 uppercase text-xs tracking-wider">
                             <tr>
                                 <th class="p-4 border-b">Data</th>
-                                <th class="p-4 border-b">Cliente (E-mail)</th>
-                                <th class="p-4 border-b">Apostila</th>
+                                <th class="p-4 border-b">Cliente</th>
+                                <th class="p-4 border-b">Produto</th>
                                 <th class="p-4 border-b text-center">Valor</th>
-                                <th class="p-4 border-b text-right">Suporte</th>
+                                <th class="p-4 border-b text-right">Ações</th>
                             </tr>
                         </thead>
-                        <tbody id="sales-table-body" class="divide-y divide-gray-100">
-                            </tbody>
+                        <tbody id="sales-table-body" class="divide-y divide-gray-100"></tbody>
                     </table>
                 </div>
             </div>
-
         </div>
     </div>
 
     <div id="product-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div class="p-6 border-b flex justify-between items-center bg-gray-50">
                 <h3 class="text-xl font-bold text-gray-800" id="modal-title">Produto</h3>
                 <button onclick="closeModal()" class="text-gray-400 hover:text-red-500 font-bold text-2xl">&times;</button>
             </div>
             <form id="product-form" class="p-6 space-y-5">
                 <input type="hidden" id="prod-id">
+                
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">Título</label>
@@ -149,22 +141,36 @@
                         <input type="number" step="0.01" id="prod-price" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-200 outline-none" required>
                     </div>
                 </div>
+
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">Descrição</label>
-                    <textarea id="prod-desc" rows="3" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-200 outline-none"></textarea>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Descrição Curta (Vitrine)</label>
+                    <textarea id="prod-desc" rows="2" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-200 outline-none"></textarea>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Descrição Detalhada (Página do Produto)</label>
+                    <textarea id="prod-details" rows="5" placeholder="Conte mais detalhes sobre a peça, tamanhos, o que a cliente vai aprender..." class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-200 outline-none"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 bg-gray-50 p-4 rounded-lg border border-gray-100">
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Capa</label>
-                        <input type="file" id="prod-cover" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 transition">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Capa Principal</label>
+                        <input type="file" id="prod-cover" accept="image/*" class="w-full text-sm">
                         <p class="text-xs text-gray-400 mt-1" id="current-cover-text"></p>
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Arquivo PDF</label>
-                        <input type="file" id="prod-pdf" accept="application/pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 transition">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Arquivo (PDF ou ZIP)</label>
+                        <input type="file" id="prod-pdf" accept=".pdf, .zip, .rar" class="w-full text-sm">
                         <p class="text-xs text-gray-400 mt-1" id="current-pdf-text"></p>
                     </div>
                 </div>
+
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Galeria de Fotos (Peça Pronta)</label>
+                    <input type="file" id="prod-gallery" accept="image/*" multiple class="w-full text-sm mb-2">
+                    <p class="text-xs text-gray-500">Selecione várias fotos de uma vez. <span class="text-red-500">Atenção: Ao enviar novas fotos aqui, a galeria anterior será substituída.</span></p>
+                    <p class="text-xs text-blue-500 font-bold mt-1" id="current-gallery-text"></p>
+                </div>
+
                 <div class="pt-4 flex justify-end gap-3 border-t mt-4">
                     <button type="button" onclick="closeModal()" class="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition">Cancelar</button>
                     <button type="submit" id="btn-save" class="bg-[#660066] text-white px-6 py-2.5 rounded-lg font-bold hover:bg-[#4d004d] transition shadow-lg">Salvar Produto</button>
@@ -174,10 +180,8 @@
     </div>
 
     <script>
-        // --- CONFIGURAÇÃO ---
         const SUPABASE_URL = 'https://tyhiqdrndpchiqkcdidv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5aGlxZHJuZHBjaGlxa2NkaWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0OTU2MzIsImV4cCI6MjA3MjA3MTYzMn0.FCETO8-cPLCGMiw5qYv3_7lSsM6GBAAY914ZXbAhZDY';
-        // --------------------
         
         const adminClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -205,7 +209,7 @@
             document.getElementById('dashboard-screen').classList.remove('hidden');
             loadData();
             loadSalesData();
-            loadPopupSettings(); // <--- CARREGA AS CONFIGS DO POPUP
+            loadPopupSettings();
         }
 
         async function logout() {
@@ -254,7 +258,7 @@
                     <td class="p-4 text-center text-gray-600">R$ ${p.price}</td>
                     <td class="p-4 text-center font-bold text-blue-600 bg-blue-50 rounded-lg">${s.sales}</td>
                     <td class="p-4 text-right space-x-2">
-                        <button onclick='editProduct(${JSON.stringify(p)})' class="text-blue-500 hover:text-blue-700 font-medium text-sm transition">Editar</button>
+                        <button onclick='editProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="text-blue-500 hover:text-blue-700 font-medium text-sm transition">Editar</button>
                         <button onclick="deleteProduct('${p.id}')" class="text-red-400 hover:text-red-600 font-medium text-sm transition">Excluir</button>
                     </td>
                 </tr>
@@ -273,13 +277,8 @@
                 .order('created_at', { ascending: false })
                 .limit(50);
 
-            if (error) {
-                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500">Erro ao carregar vendas.</td></tr>';
-                return;
-            }
-
-            if (!sales || sales.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">Nenhuma venda registrada ainda.</td></tr>';
+            if (error || !sales || sales.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">Nenhuma venda recente.</td></tr>';
                 return;
             }
 
@@ -292,48 +291,28 @@
                         <td class="p-4 text-gray-600">${sale.products ? sale.products.title : 'Produto excluído'}</td>
                         <td class="p-4 text-center text-green-600 font-bold">R$ ${sale.amount}</td>
                         <td class="p-4 text-right">
-                            <button onclick="resendEmail('${sale.id}', this)" 
-                                    class="bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1 rounded-full text-xs font-bold transition flex items-center gap-1 ml-auto">
-                                📩 Reenviar E-mail
-                            </button>
+                            <button onclick="resendEmail('${sale.id}', this)" class="bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1 rounded-full text-xs font-bold transition flex items-center gap-1 ml-auto">📩 Reenviar</button>
                         </td>
                     </tr>
                 `;
             }).join('');
         }
 
-        // AÇÃO DE REENVIAR
         async function resendEmail(saleId, btn) {
-            if(!confirm("Deseja reenviar o e-mail com a apostila para este cliente?")) return;
-
+            if(!confirm("Deseja reenviar o e-mail?")) return;
             const originalText = btn.innerHTML;
             btn.innerHTML = "⏳ Enviando...";
             btn.disabled = true;
-
             try {
                 const response = await fetch('/.netlify/functions/resend-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ saleId })
                 });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    alert("Sucesso! O e-mail foi reenviado para o cliente.");
-                    btn.innerHTML = "✅ Enviado";
-                } else {
-                    throw new Error(data.error || "Erro desconhecido");
-                }
-            } catch (e) {
-                alert("Erro ao enviar: " + e.message);
-                btn.innerHTML = "❌ Erro";
-            } finally {
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                }, 3000);
-            }
+                if (response.ok) { alert("Sucesso! E-mail reenviado."); btn.innerHTML = "✅ Enviado"; } 
+                else throw new Error("Erro desconhecido");
+            } catch (e) { alert("Erro ao enviar."); btn.innerHTML = "❌ Erro"; } 
+            finally { setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 3000); }
         }
 
         // --- CRUD E MODAL ---
@@ -342,15 +321,22 @@
             document.getElementById('product-form').reset();
             document.getElementById('current-cover-text').innerText = '';
             document.getElementById('current-pdf-text').innerText = '';
+            document.getElementById('current-gallery-text').innerText = '';
 
             if (product) {
                 document.getElementById('modal-title').innerText = "Editar Produto";
                 document.getElementById('prod-id').value = product.id;
                 document.getElementById('prod-title').value = product.title;
                 document.getElementById('prod-price').value = product.price;
-                document.getElementById('prod-desc').value = product.description;
+                document.getElementById('prod-desc').value = product.description || '';
+                document.getElementById('prod-details').value = product.detailed_description || '';
+                
                 document.getElementById('current-cover-text').innerText = 'Imagem atual mantida';
-                document.getElementById('current-pdf-text').innerText = 'PDF atual mantido';
+                document.getElementById('current-pdf-text').innerText = 'PDF/ZIP atual mantido';
+                
+                if(product.gallery && product.gallery.length > 0) {
+                    document.getElementById('current-gallery-text').innerText = `${product.gallery.length} fotos salvas na galeria.`;
+                }
             } else {
                 document.getElementById('modal-title').innerText = "Novo Produto";
                 document.getElementById('prod-id').value = '';
@@ -376,49 +362,51 @@
                 const title = document.getElementById('prod-title').value;
                 const price = document.getElementById('prod-price').value;
                 const description = document.getElementById('prod-desc').value;
+                const detailed_description = document.getElementById('prod-details').value;
+                
                 const coverFile = document.getElementById('prod-cover').files[0];
                 const pdfFile = document.getElementById('prod-pdf').files[0];
+                const galleryFiles = document.getElementById('prod-gallery').files;
 
-                let updates = { title, price, description };
+                let updates = { title, price, description, detailed_description };
 
-                // 1. UPLOAD DA CAPA (MUDANÇA: Usa nome original)
+                // 1. CAPA
                 if (coverFile) {
-                    // Removemos Date.now() e usamos apenas o nome do arquivo
-                    const fileName = coverFile.name; 
-                    
-                    const { data, error } = await adminClient.storage
-                        .from('capas')
-                        .upload(fileName, coverFile, { upsert: true });
-
+                    const fileName = coverFile.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_');
+                    const { error } = await adminClient.storage.from('capas').upload(fileName, coverFile, { upsert: true });
                     if (error) throw new Error("Erro na Capa: " + error.message);
-
                     const { data: { publicUrl } } = adminClient.storage.from('capas').getPublicUrl(fileName);
                     updates.cover_image = publicUrl;
                 }
 
-                // 2. UPLOAD DO PDF (MUDANÇA: Usa nome original)
+                // 2. ARQUIVO (PDF/ZIP)
                 if (pdfFile) {
-                    const fileName = pdfFile.name; 
-                    
-                    const { error } = await adminClient.storage
-                        .from('apostilas')
-                        .upload(fileName, pdfFile, {
-                            upsert: true,
-                            contentType: 'application/pdf'
-                        });
-                    
-                    if (error) throw new Error("Erro no PDF: " + error.message);
-                    
-                    updates.pdf_filename = fileName;
+                    const cleanName = pdfFile.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_');
+                    const { error } = await adminClient.storage.from('apostilas').upload(cleanName, pdfFile, { upsert: true });
+                    if (error) throw new Error("Erro no Arquivo: " + error.message);
+                    updates.pdf_filename = cleanName;
                 }
 
-                // 3. SALVAR NO BANCO
+                // 3. GALERIA (VÁRIAS FOTOS)
+                if (galleryFiles.length > 0) {
+                    let galleryUrls = [];
+                    for (const file of galleryFiles) {
+                        const fileName = `gallery_${Date.now()}_${file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_')}`;
+                        const { error } = await adminClient.storage.from('capas').upload(fileName, file); // Usa o bucket de capas mesmo
+                        if (!error) {
+                            const { data: { publicUrl } } = adminClient.storage.from('capas').getPublicUrl(fileName);
+                            galleryUrls.push(publicUrl);
+                        }
+                    }
+                    updates.gallery = galleryUrls;
+                }
+
+                // SALVAR NO BANCO
                 if (id) {
                     const { error } = await adminClient.from('products').update(updates).eq('id', id);
                     if (error) throw error;
                 } else {
                     if (!coverFile || !pdfFile) throw new Error("Capa e PDF obrigatórios para novos produtos!");
-                    
                     const { error } = await adminClient.from('products').insert([updates]);
                     if (error) throw error;
                 }
@@ -443,53 +431,37 @@
             loadData();
         }
 
-        // --- LÓGICA DO POP-UP (NOVA) ---
-        
-        // 1. Carregar Configuração Atual
+        // --- POP-UP ---
         async function loadPopupSettings() {
             const { data, error } = await adminClient.from('popup_settings').select('*').eq('id', 1).single();
             if (data) {
                 document.getElementById('popup-link').value = data.link_url || '';
                 document.getElementById('popup-active').checked = data.is_active;
-                if (data.image_url) {
-                    document.getElementById('current-popup-img').innerText = 'Imagem atual salva no sistema';
-                }
+                if (data.image_url) document.getElementById('current-popup-img').innerText = 'Imagem atual salva no sistema';
             }
         }
 
-        // 2. Salvar Configuração
         document.getElementById('popup-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btn-save-popup');
             btn.innerText = 'Salvando...';
             btn.disabled = true;
-
             try {
                 const file = document.getElementById('popup-file').files[0];
                 const linkUrl = document.getElementById('popup-link').value;
                 const isActive = document.getElementById('popup-active').checked;
-                
-                let updates = { 
-                    link_url: linkUrl, 
-                    is_active: isActive 
-                };
-
-                // Upload da imagem (se houver nova)
+                let updates = { link_url: linkUrl, is_active: isActive };
                 if (file) {
-                    const fileName = `banner_${Date.now()}.jpg`; // Nome único para evitar cache
+                    const fileName = `banner_${Date.now()}.jpg`;
                     const { error: uploadError } = await adminClient.storage.from('banners').upload(fileName, file);
                     if (uploadError) throw uploadError;
-
                     const { data: { publicUrl } } = adminClient.storage.from('banners').getPublicUrl(fileName);
                     updates.image_url = publicUrl;
                 }
-
                 const { error } = await adminClient.from('popup_settings').update(updates).eq('id', 1);
                 if (error) throw error;
-
                 alert('Pop-up atualizado com sucesso!');
                 loadPopupSettings();
-
             } catch (err) {
                 console.error(err);
                 alert('Erro ao salvar pop-up: ' + err.message);
