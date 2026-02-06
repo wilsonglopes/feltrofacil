@@ -58,8 +58,12 @@
 
         <div id="product-content" class="hidden grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16">
             
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 h-fit">
-                <img id="prod-img" src="" alt="" class="w-full h-auto rounded-xl object-cover hover:scale-105 transition duration-500 cursor-zoom-in">
+            <div class="flex flex-col gap-4">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 h-fit">
+                    <img id="prod-img" src="" alt="" class="w-full h-auto rounded-xl object-cover hover:scale-105 transition duration-500 cursor-zoom-in">
+                </div>
+                <div id="gallery-grid" class="grid grid-cols-4 gap-2">
+                    </div>
             </div>
 
             <div class="flex flex-col">
@@ -78,8 +82,8 @@
                 </div>
 
                 <div class="mb-8">
-                    <h3 class="font-bold text-gray-800 mb-3">Sobre esta apostila:</h3>
-                    <p id="prod-desc" class="text-gray-600 leading-relaxed prod-description text-sm md:text-base">
+                    <h3 class="font-bold text-gray-800 mb-3">Detalhes do Produto:</h3>
+                    <p id="prod-details" class="text-gray-600 leading-relaxed prod-description text-sm md:text-base">
                         </p>
                 </div>
 
@@ -153,14 +157,10 @@
 
         // --- 1. LÓGICA DE CARREGAMENTO DO PRODUTO ---
         async function loadProductDetails() {
-            // Pega o ID da URL (ex: produto.html?id=123)
             const params = new URLSearchParams(window.location.search);
             const productId = params.get('id');
 
-            if (!productId) {
-                window.location.href = 'index.html'; // Se não tiver ID, volta pra home
-                return;
-            }
+            if (!productId) { window.location.href = 'index.html'; return; }
 
             const { data, error } = await supabaseClient
                 .from('products')
@@ -175,94 +175,92 @@
 
             currentProduct = data;
 
-            // Preenche a tela
+            // Preenche textos
             document.title = `${data.title} | Feltro Fácil`;
             document.getElementById('prod-img').src = data.cover_image;
             document.getElementById('prod-img').alt = data.title;
             document.getElementById('prod-title').innerText = data.title;
             document.getElementById('prod-price').innerText = `R$ ${parseFloat(data.price).toFixed(2).replace('.', ',')}`;
-            document.getElementById('prod-desc').innerText = data.description || "Apostila completa com moldes e passo a passo.";
+            
+            // Usa a descrição detalhada se existir, senão usa a curta
+            document.getElementById('prod-details').innerText = data.detailed_description || data.description || "Apostila completa com moldes e passo a passo.";
 
-            // Mostra o conteúdo
+            // Renderiza Galeria
+            const galleryDiv = document.getElementById('gallery-grid');
+            if (data.gallery && data.gallery.length > 0) {
+                // Adiciona a capa original também na galeria para clicar e voltar
+                const allImages = [data.cover_image, ...data.gallery];
+                
+                galleryDiv.innerHTML = allImages.map(imgUrl => `
+                    <div class="cursor-pointer border-2 border-transparent hover:border-purple-500 rounded-lg overflow-hidden h-20 w-full"
+                         onclick="changeMainImage('${imgUrl}')">
+                        <img src="${imgUrl}" class="w-full h-full object-cover">
+                    </div>
+                `).join('');
+            } else {
+                galleryDiv.innerHTML = '<p class="text-xs text-gray-400 col-span-4">Sem fotos adicionais.</p>';
+            }
+
             document.getElementById('loading-screen').classList.add('hidden');
             document.getElementById('product-content').classList.remove('hidden');
         }
 
-        // --- 2. CHECKOUT (Igual ao Index/Combo) ---
-        function startCheckout() {
-            openPaymentChoice();
+        // Função para trocar a imagem principal ao clicar na galeria
+        window.changeMainImage = function(url) {
+            document.getElementById('prod-img').src = url;
         }
 
+        // --- 2. CHECKOUT E MODALS ---
+        function startCheckout() { openPaymentChoice(); }
         function openPaymentChoice() {
             document.getElementById('payment-choice-modal').classList.remove('hidden');
             document.getElementById('payment-choice-modal').classList.add('flex');
         }
-
         function closePaymentChoice() {
             document.getElementById('payment-choice-modal').classList.add('hidden');
             document.getElementById('payment-choice-modal').classList.remove('flex');
         }
 
-        // PAGAMENTO: BRASIL
         function payWithMercadoPago() {
             closePaymentChoice();
             initMPCheckout([currentProduct.id]); 
         }
 
-        // PAGAMENTO: INTERNACIONAL
         async function payWithStripe() {
             const btn = document.querySelector("#payment-choice-modal button[onclick='payWithStripe()']");
             const originalText = btn.innerHTML;
-            
             let email = prompt("Please enter your email address to receive the files:");
-            if (!email || !email.includes('@')) {
-                alert("Valid email is required.");
-                return;
-            }
-
-            btn.innerHTML = "Loading...";
-            btn.disabled = true;
-
+            if (!email || !email.includes('@')) { alert("Valid email is required."); return; }
+            btn.innerHTML = "Loading..."; btn.disabled = true;
             try {
                 const response = await fetch('/.netlify/functions/create-stripe-checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ items: [{id: currentProduct.id}], customerEmail: email })
                 });
-
                 const data = await response.json();
                 if (data.url) window.location.href = data.url;
                 else throw new Error(data.error || "Stripe Error");
-            } catch (error) {
-                console.error(error);
-                alert("Connection error.");
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
+            } catch (error) { console.error(error); alert("Connection error."); btn.innerHTML = originalText; btn.disabled = false; }
         }
 
-        // --- LÓGICA DO MERCADO PAGO ---
         async function initMPCheckout(cartIds) {
             const modal = document.getElementById('checkout-modal');
             const container = document.getElementById('paymentBrick_container');
             const loading = document.getElementById('modal-loading');
-
             if (currentBrickController) currentBrickController.unmount();
             container.innerHTML = ''; 
             modal.classList.remove('hidden'); modal.classList.add('flex');
             loading.classList.remove('hidden');
             document.getElementById('checking-payment').classList.add('hidden');
-
             try {
                 const response = await fetch('/.netlify/functions/create-checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ cartItems: cartIds })
                 });
-                
                 const data = await response.json();
                 if (!data.preferenceId) throw new Error(data.error);
-
                 const settings = {
                     initialization: { preferenceId: data.preferenceId, amount: data.amount },
                     customization: {
@@ -287,10 +285,7 @@
                     },
                 };
                 currentBrickController = await bricksBuilder.create('payment', 'paymentBrick_container', settings);
-            } catch (err) {
-                alert('Erro: ' + err.message);
-                closeModal();
-            }
+            } catch (err) { alert('Erro: ' + err.message); closeModal(); }
         }
 
         async function showStatusScreen(paymentId) {
@@ -326,7 +321,6 @@
             if (currentBrickController) { currentBrickController.unmount(); currentBrickController = null; }
         }
 
-        // Inicia o carregamento ao abrir a página
         document.addEventListener('DOMContentLoaded', loadProductDetails);
     </script>
 </body>
