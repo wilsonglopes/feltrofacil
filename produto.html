@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes da Apostila | Feltro Fácil</title>
+    <link rel="icon" type="image/png" href="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/novo_logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background-color: #fcf7fd; }
+        .text-brand { color: #660066; }
+        .bg-brand { background-color: #660066; }
+        .hover-brand:hover { background-color: #4d004d; }
+        /* Permite quebras de linha na descrição */
+        .prod-description { white-space: pre-line; }
+    </style>
+
+    <script>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '495106448108869');
+      fbq('track', 'PageView');
+    </script>
+</head>
+<body class="text-stone-700"> 
+
+    <header class="bg-white/95 backdrop-blur shadow-sm py-3 sticky top-0 z-40 border-b border-purple-50">
+        <div class="container mx-auto px-4 flex justify-between items-center relative">
+            <a href="index.html" class="flex items-center gap-2 text-stone-500 hover:text-[#660066] transition font-bold text-sm bg-gray-50 hover:bg-purple-50 px-4 py-2 rounded-full border border-gray-100 shadow-sm">
+                <i class="fas fa-arrow-left"></i> 
+                <span class="hidden md:inline">Voltar para a Loja</span>
+                <span class="md:hidden">Voltar</span>
+            </a>
+            <div class="absolute left-1/2 transform -translate-x-1/2">
+                <img src="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/logo-f.png" alt="Logo" class="h-8 md:h-10 w-auto">
+            </div>
+            <div class="w-20 hidden md:block"></div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-12 max-w-6xl min-h-screen">
+        
+        <div id="loading-screen" class="text-center py-20">
+            <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-[#660066] border-t-transparent"></div>
+            <p class="mt-4 text-gray-500">Carregando detalhes...</p>
+        </div>
+
+        <div id="product-content" class="hidden grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16">
+            
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 h-fit">
+                <img id="prod-img" src="" alt="" class="w-full h-auto rounded-xl object-cover hover:scale-105 transition duration-500 cursor-zoom-in">
+            </div>
+
+            <div class="flex flex-col">
+                <h1 id="prod-title" class="text-3xl md:text-4xl font-bold text-gray-800 mb-2 leading-tight">...</h1>
+                <div class="flex items-center gap-2 mb-6">
+                    <span class="bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1 rounded-full">Envio Imediato (E-mail)</span>
+                    <span class="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full">PDF Alta Qualidade</span>
+                </div>
+
+                <div class="mb-8 border-b border-gray-100 pb-6">
+                    <p class="text-gray-400 text-sm mb-1">Valor do investimento:</p>
+                    <p id="prod-price" class="text-4xl font-bold text-brand">R$ ...</p>
+                    <p class="text-green-600 text-sm font-semibold mt-2 flex items-center gap-1">
+                        <i class="fas fa-lock"></i> Pagamento 100% Seguro
+                    </p>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="font-bold text-gray-800 mb-3">Sobre esta apostila:</h3>
+                    <p id="prod-desc" class="text-gray-600 leading-relaxed prod-description text-sm md:text-base">
+                        </p>
+                </div>
+
+                <div class="mt-auto">
+                    <button onclick="startCheckout()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-xl text-xl shadow-lg transform transition hover:-translate-y-1 hover:shadow-2xl flex items-center justify-center gap-3">
+                        <span>COMPRAR AGORA</span>
+                        <i class="fas fa-shopping-bag"></i>
+                    </button>
+                    <p class="text-center text-xs text-gray-400 mt-3">Acesso vitalício • Suporte incluso</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="mt-12 py-8 text-center text-stone-400 text-xs border-t">
+        <p>&copy; 2026 Feltro Fácil • Todos os direitos reservados.</p>
+    </footer>
+
+    <div id="payment-choice-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative animate-fade-in">
+            <button onclick="closePaymentChoice()" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 font-bold text-xl">&times;</button>
+            <h3 class="text-xl font-bold text-center text-[#660066] mb-2">Como deseja pagar?</h3>
+            <div class="space-y-3 mt-6">
+                <button onclick="payWithMercadoPago()" class="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-[#009EE3] hover:bg-blue-50 transition group">
+                    <div class="flex items-center gap-3">
+                        <img src="https://img.icons8.com/color/48/brazil.png" class="w-8 h-8">
+                        <div class="text-left"><p class="font-bold text-gray-800 group-hover:text-[#009EE3]">Brasil</p><p class="text-xs text-gray-500">Pix, Boleto, Cartão Nacional</p></div>
+                    </div>
+                    <span class="text-[#009EE3]">➔</span>
+                </button>
+                <button onclick="payWithStripe()" class="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-[#635BFF] hover:bg-indigo-50 transition group">
+                    <div class="flex items-center gap-3">
+                        <img src="https://img.icons8.com/color/48/globe.png" class="w-8 h-8">
+                        <div class="text-left"><p class="font-bold text-gray-800 group-hover:text-[#635BFF]">Internacional</p><p class="text-xs text-gray-500">Cartão de Crédito (Mundo todo)</p></div>
+                    </div>
+                    <span class="text-[#635BFF]">➔</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="checkout-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="bg-[#660066] p-4 flex justify-between items-center shrink-0">
+                <h3 class="text-white font-bold text-lg">Finalizar Compra</h3>
+                <button onclick="closeModal()" class="text-white/80 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1 relative">
+                <div id="paymentBrick_container"></div>
+                <div id="modal-loading" class="text-center py-12 hidden">
+                    <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-[#660066] border-t-transparent"></div>
+                    <p class="mt-4 text-gray-600 font-medium">Iniciando pagamento seguro...</p>
+                </div>
+                <div id="checking-payment" class="hidden text-center mt-4 p-3 bg-purple-50 text-purple-700 text-sm rounded border border-purple-100 animate-pulse">Aguardando confirmação do banco...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://tyhiqdrndpchiqkcdidv.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5aGlxZHJuZHBjaGlxa2NkaWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0OTU2MzIsImV4cCI6MjA3MjA3MTYzMn0.FCETO8-cPLCGMiw5qYv3_7lSsM6GBAAY914ZXbAhZDY';
+        const MP_PUBLIC_KEY = 'APP_USR-7a43b3a9-e898-47a3-a72d-3c35447bf3dc'; 
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const mp = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
+        let bricksBuilder = mp.bricks();
+        let currentBrickController = null;
+        let paymentCheckInterval = null;
+        
+        let currentProduct = null;
+
+        // --- 1. LÓGICA DE CARREGAMENTO DO PRODUTO ---
+        async function loadProductDetails() {
+            // Pega o ID da URL (ex: produto.html?id=123)
+            const params = new URLSearchParams(window.location.search);
+            const productId = params.get('id');
+
+            if (!productId) {
+                window.location.href = 'index.html'; // Se não tiver ID, volta pra home
+                return;
+            }
+
+            const { data, error } = await supabaseClient
+                .from('products')
+                .select('*')
+                .eq('id', productId)
+                .single();
+
+            if (error || !data) {
+                document.getElementById('loading-screen').innerHTML = '<p class="text-red-500">Produto não encontrado.</p>';
+                return;
+            }
+
+            currentProduct = data;
+
+            // Preenche a tela
+            document.title = `${data.title} | Feltro Fácil`;
+            document.getElementById('prod-img').src = data.cover_image;
+            document.getElementById('prod-img').alt = data.title;
+            document.getElementById('prod-title').innerText = data.title;
+            document.getElementById('prod-price').innerText = `R$ ${parseFloat(data.price).toFixed(2).replace('.', ',')}`;
+            document.getElementById('prod-desc').innerText = data.description || "Apostila completa com moldes e passo a passo.";
+
+            // Mostra o conteúdo
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('product-content').classList.remove('hidden');
+        }
+
+        // --- 2. CHECKOUT (Igual ao Index/Combo) ---
+        function startCheckout() {
+            openPaymentChoice();
+        }
+
+        function openPaymentChoice() {
+            document.getElementById('payment-choice-modal').classList.remove('hidden');
+            document.getElementById('payment-choice-modal').classList.add('flex');
+        }
+
+        function closePaymentChoice() {
+            document.getElementById('payment-choice-modal').classList.add('hidden');
+            document.getElementById('payment-choice-modal').classList.remove('flex');
+        }
+
+        // PAGAMENTO: BRASIL
+        function payWithMercadoPago() {
+            closePaymentChoice();
+            initMPCheckout([currentProduct.id]); 
+        }
+
+        // PAGAMENTO: INTERNACIONAL
+        async function payWithStripe() {
+            const btn = document.querySelector("#payment-choice-modal button[onclick='payWithStripe()']");
+            const originalText = btn.innerHTML;
+            
+            let email = prompt("Please enter your email address to receive the files:");
+            if (!email || !email.includes('@')) {
+                alert("Valid email is required.");
+                return;
+            }
+
+            btn.innerHTML = "Loading...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/.netlify/functions/create-stripe-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items: [{id: currentProduct.id}], customerEmail: email })
+                });
+
+                const data = await response.json();
+                if (data.url) window.location.href = data.url;
+                else throw new Error(data.error || "Stripe Error");
+            } catch (error) {
+                console.error(error);
+                alert("Connection error.");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // --- LÓGICA DO MERCADO PAGO ---
+        async function initMPCheckout(cartIds) {
+            const modal = document.getElementById('checkout-modal');
+            const container = document.getElementById('paymentBrick_container');
+            const loading = document.getElementById('modal-loading');
+
+            if (currentBrickController) currentBrickController.unmount();
+            container.innerHTML = ''; 
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+            loading.classList.remove('hidden');
+            document.getElementById('checking-payment').classList.add('hidden');
+
+            try {
+                const response = await fetch('/.netlify/functions/create-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cartItems: cartIds })
+                });
+                
+                const data = await response.json();
+                if (!data.preferenceId) throw new Error(data.error);
+
+                const settings = {
+                    initialization: { preferenceId: data.preferenceId, amount: data.amount },
+                    customization: {
+                        paymentMethods: { ticket: "all", bankTransfer: "all", creditCard: "all", debitCard: "all", mercadoPago: "all" },
+                        visual: { style: { theme: 'default', customVariables: { formBackgroundColor: '#ffffff', baseColor: '#660066' } } }
+                    },
+                    callbacks: {
+                        onReady: () => { loading.classList.add('hidden'); },
+                        onSubmit: ({ selectedPaymentMethod, formData }) => {
+                            return new Promise((resolve, reject) => {
+                                fetch('/.netlify/functions/process-payment', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ formData, cartItems: cartIds })
+                                }).then(res => res.json()).then(res => {
+                                    if (res.id) { resolve(); showStatusScreen(res.id); monitorPayment(res.id); } 
+                                    else { reject(); alert("Erro: " + res.error); }
+                                }).catch(() => { reject(); });
+                            });
+                        },
+                        onError: (err) => console.error(err),
+                    },
+                };
+                currentBrickController = await bricksBuilder.create('payment', 'paymentBrick_container', settings);
+            } catch (err) {
+                alert('Erro: ' + err.message);
+                closeModal();
+            }
+        }
+
+        async function showStatusScreen(paymentId) {
+            const container = document.getElementById('paymentBrick_container');
+            if (currentBrickController) currentBrickController.unmount();
+            container.innerHTML = '';
+            const settings = {
+                initialization: { paymentId: paymentId },
+                callbacks: { onReady: () => { document.getElementById('checking-payment').classList.remove('hidden'); } },
+            };
+            currentBrickController = await bricksBuilder.create('statusScreen', 'paymentBrick_container', settings);
+        }
+
+        function monitorPayment(paymentId) {
+            let attempts = 0;
+            paymentCheckInterval = setInterval(async () => {
+                attempts++;
+                if (attempts > 300) { clearInterval(paymentCheckInterval); return; }
+                const { data } = await supabaseClient.from('sales').select('id').eq('payment_id', String(paymentId)).limit(1);
+                if (data && data.length > 0) {
+                    clearInterval(paymentCheckInterval);
+                    document.getElementById('checking-payment').innerText = "Confirmado! Redirecionando...";
+                    document.getElementById('checking-payment').className = "text-center mt-4 p-3 bg-green-50 text-green-700 font-bold rounded border border-green-200";
+                    setTimeout(() => { window.location.href = 'sucesso.html'; }, 1500);
+                }
+            }, 3000); 
+        }
+
+        function closeModal() {
+            document.getElementById('checkout-modal').classList.add('hidden');
+            document.getElementById('checkout-modal').classList.remove('flex');
+            if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+            if (currentBrickController) { currentBrickController.unmount(); currentBrickController = null; }
+        }
+
+        // Inicia o carregamento ao abrir a página
+        document.addEventListener('DOMContentLoaded', loadProductDetails);
+    </script>
+</body>
+</html>
