@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Redirecionando...</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #fcf7fd; color: #660066; flex-direction: column; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #660066; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="spinner"></div>
+    <p>Buscando produto...</p>
+
+    <script>
+        const SUPABASE_URL = 'https://tyhiqdrndpchiqkcdidv.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5aGlxZHJuZHBjaGlxa2NkaWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0OTU2MzIsImV4cCI6MjA3MjA3MTYzMn0.FCETO8-cPLCGMiw5qYv3_7lSsM6GBAAY914ZXbAhZDY';
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function redirect() {
+            const params = new URLSearchParams(window.location.search);
+            const slug = params.get('p'); // Pega o apelido da URL (go.html?p=apelido)
+
+            if (!slug) { window.location.href = 'index.html'; return; }
+
+            // Busca qual produto tem esse apelido
+            const { data, error } = await client
+                .from('products')
+                .select('id')
+                .eq('slug', slug)
+                .single();
+
+            if (data) {
+                // Achou! Manda para a página oficial com o ID
+                window.location.href = `produto.html?id=${data.id}`;
+            } else {
+                // Não achou
+                document.body.innerHTML = '<h3>Produto não encontrado 😕</h3><a href="index.html">Voltar para a loja</a>';
+            }
+        }
+
+        redirect();
+    </script>
+</body>
+</html>
