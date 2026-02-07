@@ -16,8 +16,14 @@
         .text-brand { color: #660066; }
         .bg-brand { background-color: #660066; }
         .hover-brand:hover { background-color: #4d004d; }
-        /* Permite quebras de linha na descrição */
         .prod-description { white-space: pre-line; }
+        
+        /* Animação do Toast (Notificação) */
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-enter { animation: slideIn 0.3s ease-out forwards; }
     </style>
 
     <script>
@@ -35,17 +41,24 @@
 </head>
 <body class="text-stone-700"> 
 
+    <div id="toast-container" class="fixed top-20 right-5 z-50 flex flex-col gap-2"></div>
+
     <header class="bg-white/95 backdrop-blur shadow-sm py-3 sticky top-0 z-40 border-b border-purple-50">
         <div class="container mx-auto px-4 flex justify-between items-center relative">
+            
             <a href="index.html" class="flex items-center gap-2 text-stone-500 hover:text-[#660066] transition font-bold text-sm bg-gray-50 hover:bg-purple-50 px-4 py-2 rounded-full border border-gray-100 shadow-sm">
                 <i class="fas fa-arrow-left"></i> 
-                <span class="hidden md:inline">Voltar para a Loja</span>
-                <span class="md:hidden">Voltar</span>
+                <span class="hidden md:inline">Voltar</span>
             </a>
+
             <div class="absolute left-1/2 transform -translate-x-1/2">
                 <img src="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/logo-f.png" alt="Logo" class="h-8 md:h-10 w-auto">
             </div>
-            <div class="w-20 hidden md:block"></div>
+
+            <a href="index.html#cart" class="relative group cursor-pointer bg-purple-50 p-2 rounded-full hover:bg-purple-100 transition">
+                <i class="fas fa-shopping-cart text-[#660066] text-lg"></i>
+                <span id="cart-counter" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full hidden">0</span>
+            </a>
         </div>
     </header>
 
@@ -62,14 +75,14 @@
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 h-fit">
                     <img id="prod-img" src="" alt="" class="w-full h-auto rounded-xl object-cover hover:scale-105 transition duration-500 cursor-zoom-in">
                 </div>
-                <div id="gallery-grid" class="grid grid-cols-4 gap-2">
-                    </div>
+                <div id="gallery-grid" class="grid grid-cols-4 gap-2"></div>
             </div>
 
             <div class="flex flex-col">
                 <h1 id="prod-title" class="text-3xl md:text-4xl font-bold text-gray-800 mb-2 leading-tight">...</h1>
+                
                 <div class="flex items-center gap-2 mb-6">
-                    <span class="bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1 rounded-full">Envio Imediato (E-mail)</span>
+                    <span class="bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1 rounded-full">Envio Imediato</span>
                     <span class="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full">PDF Alta Qualidade</span>
                 </div>
 
@@ -87,13 +100,19 @@
                         </p>
                 </div>
 
-                <div class="mt-auto">
-                    <button onclick="startCheckout()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-xl text-xl shadow-lg transform transition hover:-translate-y-1 hover:shadow-2xl flex items-center justify-center gap-3">
-                        <span>COMPRAR AGORA</span>
-                        <i class="fas fa-shopping-bag"></i>
+                <div class="mt-auto grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    
+                    <button onclick="addToCart()" class="w-full bg-purple-100 hover:bg-purple-200 text-[#660066] font-bold py-4 px-4 rounded-xl text-lg shadow-sm border border-purple-200 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-cart-plus"></i>
+                        <span>Add ao Carrinho</span>
                     </button>
-                    <p class="text-center text-xs text-gray-400 mt-3">Acesso vitalício • Suporte incluso</p>
+
+                    <button onclick="startCheckout()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-xl text-lg shadow-lg transform transition hover:-translate-y-1 hover:shadow-2xl flex items-center justify-center gap-2">
+                        <span>Comprar Agora</span>
+                        <i class="fas fa-check"></i>
+                    </button>
                 </div>
+                <p class="text-center text-xs text-gray-400 mt-3">Acesso vitalício • Suporte incluso</p>
             </div>
         </div>
     </main>
@@ -155,7 +174,7 @@
         
         let currentProduct = null;
 
-        // --- 1. LÓGICA DE CARREGAMENTO DO PRODUTO ---
+        // --- 1. LÓGICA DE CARREGAMENTO ---
         async function loadProductDetails() {
             const params = new URLSearchParams(window.location.search);
             const productId = params.get('id');
@@ -181,16 +200,12 @@
             document.getElementById('prod-img').alt = data.title;
             document.getElementById('prod-title').innerText = data.title;
             document.getElementById('prod-price').innerText = `R$ ${parseFloat(data.price).toFixed(2).replace('.', ',')}`;
-            
-            // Usa a descrição detalhada se existir, senão usa a curta
             document.getElementById('prod-details').innerText = data.detailed_description || data.description || "Apostila completa com moldes e passo a passo.";
 
-            // Renderiza Galeria
+            // Galeria
             const galleryDiv = document.getElementById('gallery-grid');
             if (data.gallery && data.gallery.length > 0) {
-                // Adiciona a capa original também na galeria para clicar e voltar
                 const allImages = [data.cover_image, ...data.gallery];
-                
                 galleryDiv.innerHTML = allImages.map(imgUrl => `
                     <div class="cursor-pointer border-2 border-transparent hover:border-purple-500 rounded-lg overflow-hidden h-20 w-full"
                          onclick="changeMainImage('${imgUrl}')">
@@ -203,14 +218,70 @@
 
             document.getElementById('loading-screen').classList.add('hidden');
             document.getElementById('product-content').classList.remove('hidden');
+            
+            updateCartCounter(); // Atualiza o carrinho ao abrir a página
         }
 
-        // Função para trocar a imagem principal ao clicar na galeria
         window.changeMainImage = function(url) {
             document.getElementById('prod-img').src = url;
         }
 
-        // --- 2. CHECKOUT E MODALS ---
+        // --- 2. LÓGICA DO CARRINHO (NOVO) ---
+        function addToCart() {
+            if(!currentProduct) return;
+
+            // Pega o carrinho atual (ou cria um novo)
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+            // Verifica se já está no carrinho
+            const exists = cart.find(item => item.id === currentProduct.id);
+            if(exists) {
+                showToast("⚠️ Este item já está no carrinho!", "orange");
+                return;
+            }
+
+            // Adiciona
+            cart.push(currentProduct);
+            localStorage.setItem('cart', JSON.stringify(cart));
+
+            // Atualiza visual
+            updateCartCounter();
+            showToast("✅ Adicionado ao carrinho com sucesso!");
+        }
+
+        function updateCartCounter() {
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const counter = document.getElementById('cart-counter');
+            
+            if (cart.length > 0) {
+                counter.innerText = cart.length;
+                counter.classList.remove('hidden');
+            } else {
+                counter.classList.add('hidden');
+            }
+        }
+
+        function showToast(message, color = "green") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            // Define cor
+            let bgColor = color === "green" ? "bg-green-600" : "bg-orange-500";
+            
+            toast.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg font-bold text-sm toast-enter flex items-center gap-2`;
+            toast.innerHTML = `<span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            // Remove depois de 3 segundos
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-20px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // --- 3. CHECKOUT E MODALS ---
         function startCheckout() { openPaymentChoice(); }
         function openPaymentChoice() {
             document.getElementById('payment-choice-modal').classList.remove('hidden');
