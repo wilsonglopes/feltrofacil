@@ -24,6 +24,10 @@
             50% { transform: translateY(-5px); }
         }
         .cart-bounce { animation: bounce 0.5s; }
+        
+        /* Notificação Toast */
+        .toast-enter { animation: slideIn 0.3s ease-out forwards; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
 
     <script>
@@ -41,8 +45,11 @@
     <noscript><img height="1" width="1" style="display:none"
       src="https://www.facebook.com/tr?id=495106448108869&ev=PageView&noscript=1"
     /></noscript>
-    </head>
+</head>
 <body class="text-stone-700 pb-20"> 
+
+    <div id="toast-container" class="fixed top-24 right-5 z-[90] flex flex-col gap-2"></div>
+
     <header class="bg-white/90 backdrop-blur shadow-sm sticky top-0 z-40">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center gap-2">
@@ -52,7 +59,15 @@
                          class="h-7 w-auto object-contain">
                 </a>
             </div>
-            <a href="https://feltrofacil.com.br" class="text-sm font-bold text-stone-500 hover:text-[#660066] transition-colors">Voltar ao Blog</a>
+
+            <div class="flex items-center gap-4">
+                <button onclick="openCartCheckout()" class="relative group cursor-pointer hover:bg-purple-50 p-2 rounded-full transition">
+                    <i class="fas fa-shopping-cart text-[#660066] text-lg"></i>
+                    <span id="header-cart-count" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full hidden">0</span>
+                </button>
+
+                <a href="https://feltrofacil.com.br" class="text-sm font-bold text-stone-500 hover:text-[#660066] transition-colors">Voltar ao Blog</a>
+            </div>
         </div>
     </header>
 
@@ -182,45 +197,70 @@
         let currentBrickController = null;
         let paymentCheckInterval = null;
 
-        // --- VARIÁVEIS DE ESTADO PARA O CHECKOUT ---
-        let cart = []; 
-        let pendingCheckoutIds = []; // Guarda os IDs que o cliente quer comprar enquanto ele escolhe o método
-        let pendingIsCartMode = false; // Guarda se é compra direta ou carrinho
+        // --- VARIÁVEIS DE ESTADO ---
+        // AQUI ESTÁ A MUDANÇA: O carrinho começa lendo a memória do navegador
+        let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        
+        let pendingCheckoutIds = []; 
+        let pendingIsCartMode = false; 
 
-        // --- LÓGICA DO CARRINHO ---
+        // --- LÓGICA DO CARRINHO PERSISTENTE ---
         function addToCart(id, title, price) {
+            // Atualiza a variável cart lendo do storage primeiro para garantir sincronia
+            cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
             if (cart.some(item => item.id === id)) {
-                alert("Este item já está no carrinho!");
+                showToast("⚠️ Este item já está no carrinho!", "orange");
                 return;
             }
+            
             cart.push({ id, title, price: parseFloat(price) });
+            
+            // Salva na memória do navegador
+            localStorage.setItem('cart', JSON.stringify(cart));
+            
             updateCartUI();
             
-            // Efeito visual
+            // Efeito visual no botão
             const btn = document.getElementById(`btn-${id}`);
             if(btn) {
-                const originalText = btn.innerText;
+                const originalText = btn.innerHTML; // Salva o ícone também
                 btn.innerText = "Adicionado!";
-                btn.classList.add("bg-green-600");
+                btn.classList.add("bg-green-600", "text-white");
+                btn.classList.remove("bg-purple-100", "text-purple-700");
                 setTimeout(() => {
-                    btn.innerText = originalText;
-                    btn.classList.remove("bg-green-600");
+                    btn.innerHTML = originalText;
+                    btn.classList.remove("bg-green-600", "text-white");
+                    btn.classList.add("bg-purple-100", "text-purple-700");
                 }, 1000);
             }
+            showToast("✅ Adicionado ao carrinho!");
         }
 
         function updateCartUI() {
+            // Lê do storage para garantir que está mostrando a verdade
+            cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+            // 1. Atualiza Carrinho Flutuante (Bottom)
             const floatCart = document.getElementById('floating-cart');
             const countEl = document.getElementById('cart-count');
             const totalEl = document.getElementById('cart-total');
 
+            // 2. Atualiza Carrinho do Header (Top)
+            const headerBadge = document.getElementById('header-cart-count');
+
             if (cart.length > 0) {
+                // Flutuante
                 floatCart.classList.remove('hidden');
-                floatCart.classList.add('flex');
-                floatCart.classList.add('cart-bounce');
+                floatCart.classList.add('flex', 'cart-bounce');
                 setTimeout(() => floatCart.classList.remove('cart-bounce'), 500);
+
+                // Header
+                headerBadge.classList.remove('hidden');
+                headerBadge.innerText = cart.length;
             } else {
                 floatCart.classList.add('hidden');
+                headerBadge.classList.add('hidden');
             }
 
             countEl.innerText = cart.length;
@@ -228,31 +268,37 @@
             totalEl.innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
         }
 
-        // --- CLICK NO CARRINHO (Flutuante) ---
+        // --- NOTIFICAÇÃO TOAST ---
+        function showToast(message, color = "green") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            let bgColor = color === "green" ? "bg-green-600" : "bg-orange-500";
+            toast.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg font-bold text-sm toast-enter`;
+            toast.innerText = message;
+            container.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 3000);
+        }
+
+        // --- CLICK NO CARRINHO ---
         async function openCartCheckout() {
+            cart = JSON.parse(localStorage.getItem('cart') || '[]'); // Garante dados frescos
             if (cart.length === 0) return alert('Seu carrinho está vazio!');
             
-            // 1. Guarda os dados temporariamente
             pendingCheckoutIds = cart.map(item => item.id);
             pendingIsCartMode = true;
 
-            // 2. Abre a escolha de pagamento
             openPaymentChoice();
         }
 
-        // --- CLICK EM "COMPRAR" (Botão Roxo) ---
+        // --- CLICK EM "COMPRAR" (Direto) ---
         async function buyNow(id, title, price) {
             trackClick(id);
-            
-            // 1. Guarda os dados temporariamente
             pendingCheckoutIds = [id];
             pendingIsCartMode = false;
-
-            // 2. Abre a escolha de pagamento
             openPaymentChoice();
         }
 
-        // --- MODAL DE ESCOLHA (BRASIL VS INTERNACIONAL) ---
+        // --- MODAL DE ESCOLHA ---
         function openPaymentChoice() {
             const modal = document.getElementById('payment-choice-modal');
             modal.classList.remove('hidden');
@@ -265,38 +311,34 @@
             modal.classList.remove('flex');
         }
 
-        // --- OPÇÃO 1: BRASIL (MERCADO PAGO) ---
+        // --- PAGAMENTO: BRASIL ---
         function payWithMercadoPago() {
             closePaymentChoice();
-            // Chama a função original do Mercado Pago com os dados que guardamos
             initCheckout(pendingCheckoutIds, pendingIsCartMode);
         }
 
-        // --- OPÇÃO 2: INTERNACIONAL (STRIPE) ---
+        // --- PAGAMENTO: STRIPE ---
         async function payWithStripe() {
-            // Seleciona o botão dentro do modal para dar feedback visual
             const btn = document.querySelector("#payment-choice-modal button[onclick='payWithStripe()']");
-            const originalText = btn.innerHTML; // Guarda o ícone e texto originais
+            const originalText = btn.innerHTML;
             
-            // Pede o e-mail (necessário para o Stripe enviar o produto depois)
             let email = prompt("Please enter your email address to receive the files:\n(Por favor, digite seu e-mail para receber os arquivos:)");
-            
             if (!email || !email.includes('@')) {
-                alert("Valid email is required to receive the products.\n(E-mail válido é necessário para receber os produtos.)");
+                alert("Valid email is required.");
                 return;
             }
 
-            btn.innerHTML = "Loading..."; // Feedback
+            btn.innerHTML = "Loading...";
             btn.disabled = true;
 
             try {
-                // Prepara os itens para o Stripe (precisa mandar objeto com id)
-                // Se for carrinho, usa o cart global. Se for compra direta, cria array na hora.
+                // Prepara itens baseado no modo (Carrinho vs Compra Direta)
                 let itemsToSend = [];
                 if (pendingIsCartMode) {
-                    itemsToSend = cart; 
+                    // Pega direto da memória para garantir integridade
+                    const savedCart = JSON.parse(localStorage.getItem('cart') || '[]');
+                    itemsToSend = savedCart; 
                 } else {
-                    // Como no buyNow só guardamos o ID, precisamos mandar o objeto simples
                     itemsToSend = [{ id: pendingCheckoutIds[0] }];
                 }
 
@@ -307,17 +349,14 @@
                 });
 
                 const data = await response.json();
-                
                 if (data.url) {
-                    // Redireciona para o checkout seguro do Stripe
                     window.location.href = data.url; 
                 } else {
                     throw new Error(data.error || "Stripe Error");
                 }
-
             } catch (error) {
                 console.error(error);
-                alert("Connection error. Please try again.\n(Erro de conexão. Tente novamente.)");
+                alert("Connection error. Please try again.");
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
@@ -328,7 +367,8 @@
             try { await supabaseClient.from('clicks').insert({ product_id: productId }); } catch (e) {}
         }
 
-async function loadProducts() {
+        // --- CARREGAR PRODUTOS ---
+        async function loadProducts() {
             const grid = document.getElementById('products-grid');
             const { data: products, error } = await supabaseClient.from('products').select('*').order('created_at', { ascending: false });
 
@@ -371,7 +411,7 @@ async function loadProducts() {
             `).join('');
         }
 
-        // --- CHECKOUT DO MERCADO PAGO (BRICK) ---
+        // --- CHECKOUT BRICK (MP) ---
         async function initCheckout(cartIds, isCartMode) {
             const modal = document.getElementById('checkout-modal');
             const container = document.getElementById('paymentBrick_container');
@@ -402,6 +442,7 @@ async function loadProducts() {
                 if (isCartMode) {
                     itemsList.classList.remove('hidden');
                     const ul = document.getElementById('items-ul');
+                    // Usa cart global que está atualizado pelo load
                     ul.innerHTML = cart.map(i => `<li class="flex justify-between"><span>${i.title}</span> <span>R$ ${i.price.toFixed(2)}</span></li>`).join('');
                     document.getElementById('modal-total-price').innerText = `R$ ${data.amount.toFixed(2)}`;
                 }
@@ -412,19 +453,8 @@ async function loadProducts() {
                         amount: data.amount,
                     },
                     customization: {
-                        paymentMethods: {
-                            ticket: "all",
-                            bankTransfer: "all",
-                            creditCard: "all",
-                            debitCard: "all",
-                            mercadoPago: "all",
-                        },
-                        visual: {
-                            style: {
-                                theme: 'default',
-                                customVariables: { formBackgroundColor: '#ffffff', baseColor: '#660066' }
-                            }
-                        }
+                        paymentMethods: { ticket: "all", bankTransfer: "all", creditCard: "all", debitCard: "all", mercadoPago: "all" },
+                        visual: { style: { theme: 'default', customVariables: { formBackgroundColor: '#ffffff', baseColor: '#660066' } } }
                     },
                     callbacks: {
                         onReady: () => { loading.classList.add('hidden'); },
@@ -439,7 +469,12 @@ async function loadProducts() {
                                 .then((response) => {
                                     if (response.id) {
                                         resolve();
-                                        if (isCartMode) { cart = []; updateCartUI(); }
+                                        // SE O PAGAMENTO FOR PROCESSADO, LIMPA O CARRINHO
+                                        if (isCartMode) {
+                                            localStorage.removeItem('cart');
+                                            cart = [];
+                                            updateCartUI();
+                                        }
                                         showStatusScreen(response.id);
                                         monitorPayment(response.id);
                                     } else {
@@ -517,7 +552,7 @@ async function loadProducts() {
             if (currentBrickController) { currentBrickController.unmount(); currentBrickController = null; }
         }
 
-        // --- LÓGICA DO POP-UP PROMOCIONAL ---
+        // --- POP-UP PROMOCIONAL (MANTIDO) ---
         async function checkPromo() {
             if (sessionStorage.getItem('promo_closed')) return;
 
@@ -549,6 +584,7 @@ async function loadProducts() {
         document.addEventListener('DOMContentLoaded', () => {
             loadProducts();
             checkPromo();
+            updateCartUI(); // Atualiza o carrinho assim que a página abre
         });
     </script>
 </body>
