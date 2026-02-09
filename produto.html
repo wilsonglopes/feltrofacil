@@ -41,7 +41,7 @@
 </head>
 <body class="text-stone-700"> 
 
-    <div id="toast-container" class="fixed top-20 right-5 z-50 flex flex-col gap-2"></div>
+    <div id="toast-container" class="fixed top-24 right-5 z-[90] flex flex-col gap-2"></div>
 
     <header class="bg-white/95 backdrop-blur shadow-sm py-3 sticky top-0 z-40 border-b border-purple-50">
         <div class="container mx-auto px-4 flex justify-between items-center relative">
@@ -94,13 +94,7 @@
                     </p>
                 </div>
 
-                <div class="mb-8">
-                    <h3 class="font-bold text-gray-800 mb-3">Detalhes do Produto:</h3>
-                    <p id="prod-details" class="text-gray-600 leading-relaxed prod-description text-sm md:text-base">
-                        </p>
-                </div>
-
-                <div class="mt-auto grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="mb-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
                     
                     <button onclick="addToCart()" class="w-full bg-purple-100 hover:bg-purple-200 text-[#660066] font-bold py-4 px-4 rounded-xl text-lg shadow-sm border border-purple-200 transition flex items-center justify-center gap-2">
                         <i class="fas fa-cart-plus"></i>
@@ -112,7 +106,13 @@
                         <i class="fas fa-check"></i>
                     </button>
                 </div>
-                <p class="text-center text-xs text-gray-400 mt-3">Acesso vitalício • Suporte incluso</p>
+                <p class="text-center text-xs text-gray-400 mb-8 -mt-6">Acesso vitalício • Suporte incluso</p>
+
+                <div>
+                    <h3 class="font-bold text-gray-800 mb-3">Detalhes do Produto:</h3>
+                    <p id="prod-details" class="text-gray-600 leading-relaxed prod-description text-sm md:text-base">
+                        </p>
+                </div>
             </div>
         </div>
     </main>
@@ -226,7 +226,7 @@
             document.getElementById('prod-img').src = url;
         }
 
-        // --- 2. LÓGICA DO CARRINHO (NOVO) ---
+        // --- 2. LÓGICA DO CARRINHO ---
         function addToCart() {
             if(!currentProduct) return;
 
@@ -268,7 +268,7 @@
             // Define cor
             let bgColor = color === "green" ? "bg-green-600" : "bg-orange-500";
             
-            toast.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg font-bold text-sm toast-enter flex items-center gap-2`;
+            toast.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg font-bold text-sm toast-enter flex items-center gap-2 z-[90]`;
             toast.innerHTML = `<span>${message}</span>`;
 
             container.appendChild(toast);
@@ -372,9 +372,14 @@
 
         function monitorPayment(paymentId) {
             let attempts = 0;
+            const maxAttempts = 300;
             paymentCheckInterval = setInterval(async () => {
                 attempts++;
-                if (attempts > 300) { clearInterval(paymentCheckInterval); return; }
+                if (attempts > maxAttempts) {
+                    clearInterval(paymentCheckInterval);
+                    document.getElementById('checking-payment').innerText = "Tempo limite. Verifique e-mail.";
+                    return;
+                }
                 const { data } = await supabaseClient.from('sales').select('id').eq('payment_id', String(paymentId)).limit(1);
                 if (data && data.length > 0) {
                     clearInterval(paymentCheckInterval);
