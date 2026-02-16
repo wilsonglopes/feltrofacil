@@ -34,7 +34,13 @@
                     <img src="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/logo-f.png" class="h-8 bg-white rounded-full p-1">
                     <h1 class="font-bold text-xl">Dashboard <span class="text-xs font-normal opacity-70 ml-1">(Ver Loja ↗)</span></h1>
                 </a>
-                <button onclick="logout()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded text-sm transition">Sair</button>
+                
+                <div class="flex gap-3">
+                    <button onclick="openManualSaleModal()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-bold text-sm transition shadow-md flex items-center gap-2">
+                        ⚡ Venda Manual
+                    </button>
+                    <button onclick="logout()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded text-sm transition">Sair</button>
+                </div>
             </div>
         </nav>
 
@@ -79,7 +85,7 @@
 
             <div class="flex justify-between items-center mb-6 mt-10">
                 <h2 class="text-2xl font-bold text-gray-800">Meus Produtos</h2>
-                <button onclick="openModal()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-md flex items-center gap-2 transition transform hover:scale-105">
+                <button onclick="openModal()" class="bg-[#660066] hover:bg-[#4d004d] text-white px-5 py-2.5 rounded-lg font-bold shadow-md flex items-center gap-2 transition transform hover:scale-105">
                     <span>+</span> Novo Produto
                 </button>
             </div>
@@ -112,6 +118,7 @@
                                 <th class="p-4 border-b">Cliente</th>
                                 <th class="p-4 border-b">Produto</th>
                                 <th class="p-4 border-b text-center">Valor</th>
+                                <th class="p-4 border-b text-center">Método</th>
                                 <th class="p-4 border-b text-right">Ações</th>
                             </tr>
                         </thead>
@@ -119,6 +126,32 @@
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="manual-sale-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[60] p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="bg-green-600 p-4 flex justify-between items-center">
+                <h3 class="text-white font-bold text-lg">⚡ Registrar Venda Manual</h3>
+                <button onclick="document.getElementById('manual-sale-modal').classList.add('hidden')" class="text-white/80 hover:text-white font-bold text-xl">&times;</button>
+            </div>
+            <form id="manual-sale-form" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">E-mail da Cliente</label>
+                    <input type="email" id="manual-email" placeholder="cliente@email.com" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-200 outline-none" required>
+                    <p class="text-xs text-gray-500 mt-1">O link de download será enviado para este e-mail.</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Selecione as Apostilas</label>
+                    <div id="manual-products-list" class="max-h-40 overflow-y-auto border rounded-lg p-2 space-y-2 bg-gray-50">
+                        </div>
+                </div>
+
+                <button type="submit" id="btn-manual-send" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold shadow-lg transition">
+                    Confirmar Venda e Enviar E-mail
+                </button>
+            </form>
         </div>
     </div>
 
@@ -193,6 +226,7 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5aGlxZHJuZHBjaGlxa2NkaWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0OTU2MzIsImV4cCI6MjA3MjA3MTYzMn0.FCETO8-cPLCGMiw5qYv3_7lSsM6GBAAY914ZXbAhZDY';
         
         const adminClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let allProductsCache = []; // Variável Global para guardar produtos para a venda manual
 
         async function checkSession() {
             const { data: { session } } = await adminClient.auth.getSession();
@@ -226,10 +260,13 @@
             window.location.reload();
         }
 
-        // --- DASHBOARD GERAL (ATUALIZADO COM BOTÃO COPIAR LINK) ---
+        // --- DASHBOARD GERAL ---
         async function loadData() {
             const tbody = document.getElementById('products-table-body');
             const { data: products } = await adminClient.from('products').select('*').order('created_at', { ascending: false });
+            
+            allProductsCache = products; // Salva na memória para usar no modal de Venda Manual
+
             const { data: sales } = await adminClient.from('sales').select('product_id, amount').eq('status', 'approved');
             const { data: clicks } = await adminClient.from('clicks').select('product_id');
 
@@ -260,7 +297,7 @@
                 const s = stats[p.id];
                 const productData = JSON.stringify(p).replace(/'/g, "&#39;");
                 
-                // Verifica se tem slug para habilitar o botão
+                // Lógica do Link Amigável
                 const hasSlug = p.slug && p.slug.trim() !== '';
                 const copyBtnClass = hasSlug 
                     ? "bg-purple-100 hover:bg-purple-200 text-purple-700 border-purple-200 cursor-pointer" 
@@ -308,10 +345,8 @@
 
         // --- FUNÇÃO PARA COPIAR O LINK ---
         function copyLink(slug) {
-            // Monta o link base. Se estiver testando local, pega o localhost. Se estiver online, pega o domínio.
             const baseUrl = window.location.origin; 
             const fullLink = `${baseUrl}/go.html?p=${slug}`;
-
             navigator.clipboard.writeText(fullLink).then(() => {
                 alert("✅ Link copiado: " + fullLink);
             }).catch(err => {
@@ -320,10 +355,75 @@
             });
         }
 
+        // --- LÓGICA DE VENDA MANUAL (NOVA) ---
+        function openManualSaleModal() {
+            const container = document.getElementById('manual-products-list');
+            
+            // Popula a lista de produtos com Checkboxes
+            container.innerHTML = allProductsCache.map(p => `
+                <div class="flex items-center gap-3 p-2 hover:bg-green-50 rounded cursor-pointer border border-transparent hover:border-green-200 transition">
+                    <input type="checkbox" name="manual_product" value="${p.id}" id="chk_${p.id}" class="w-5 h-5 accent-green-600 cursor-pointer">
+                    <label for="chk_${p.id}" class="flex-1 flex items-center gap-3 cursor-pointer select-none">
+                        <img src="${p.cover_image}" class="w-10 h-10 object-cover rounded shadow-sm">
+                        <span class="text-sm font-bold text-gray-700">${p.title}</span>
+                    </label>
+                </div>
+            `).join('');
+            
+            document.getElementById('manual-email').value = '';
+            document.getElementById('manual-sale-modal').classList.remove('hidden');
+            document.getElementById('manual-sale-modal').classList.add('flex');
+        }
+
+        document.getElementById('manual-sale-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-manual-send');
+            const originalText = btn.innerText;
+            btn.innerText = "Enviando...";
+            btn.disabled = true;
+
+            const email = document.getElementById('manual-email').value;
+            // Pega todos os produtos marcados
+            const checkboxes = document.querySelectorAll('input[name="manual_product"]:checked');
+            const productIds = Array.from(checkboxes).map(cb => cb.value);
+
+            if (productIds.length === 0) {
+                alert("Selecione pelo menos uma apostila!");
+                btn.innerText = originalText;
+                btn.disabled = false;
+                return;
+            }
+
+            try {
+                // Chama a nova função do backend
+                const response = await fetch('/.netlify/functions/manual-sale', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, productIds })
+                });
+
+                if (response.ok) {
+                    alert("✅ Venda registrada e e-mail enviado com sucesso!");
+                    document.getElementById('manual-sale-modal').classList.add('hidden');
+                    document.getElementById('manual-sale-modal').classList.remove('flex');
+                    loadSalesData(); // Atualiza a tabela de vendas
+                    loadData(); // Atualiza os contadores
+                } else {
+                    const err = await response.json();
+                    throw new Error(err.error || "Erro desconhecido");
+                }
+            } catch (err) {
+                alert("Erro: " + err.message);
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        });
+
         // --- LISTA DE VENDAS E REENVIO ---
         async function loadSalesData() {
             const tbody = document.getElementById('sales-table-body');
-            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">Carregando vendas...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center">Carregando vendas...</td></tr>';
 
             const { data: sales, error } = await adminClient
                 .from('sales')
@@ -333,18 +433,26 @@
                 .limit(50);
 
             if (error || !sales || sales.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">Nenhuma venda recente.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center">Nenhuma venda recente.</td></tr>';
                 return;
             }
 
             tbody.innerHTML = sales.map(sale => {
                 const date = new Date(sale.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+                
+                // Identifica se foi venda Manual
+                const isManual = sale.payment_method === 'manual_pix';
+                const methodBadge = isManual 
+                    ? '<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold border border-green-200">Manual (Pix)</span>'
+                    : '<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">Site</span>';
+
                 return `
                     <tr class="hover:bg-gray-50 border-b text-sm">
                         <td class="p-4 text-gray-500">${date}</td>
                         <td class="p-4 font-medium text-gray-800">${sale.customer_email}</td>
                         <td class="p-4 text-gray-600">${sale.products ? sale.products.title : 'Produto excluído'}</td>
                         <td class="p-4 text-center text-green-600 font-bold">R$ ${sale.amount}</td>
+                        <td class="p-4 text-center">${methodBadge}</td>
                         <td class="p-4 text-right">
                             <button onclick="resendEmail('${sale.id}', this)" class="bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1 rounded-full text-xs font-bold transition flex items-center gap-1 ml-auto">📩 Reenviar</button>
                         </td>
