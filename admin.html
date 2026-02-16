@@ -226,7 +226,7 @@
             window.location.reload();
         }
 
-        // --- DASHBOARD GERAL ---
+        // --- DASHBOARD GERAL (ATUALIZADO COM BOTÃO COPIAR LINK) ---
         async function loadData() {
             const tbody = document.getElementById('products-table-body');
             const { data: products } = await adminClient.from('products').select('*').order('created_at', { ascending: false });
@@ -260,6 +260,14 @@
                 const s = stats[p.id];
                 const productData = JSON.stringify(p).replace(/'/g, "&#39;");
                 
+                // Verifica se tem slug para habilitar o botão
+                const hasSlug = p.slug && p.slug.trim() !== '';
+                const copyBtnClass = hasSlug 
+                    ? "bg-purple-100 hover:bg-purple-200 text-purple-700 border-purple-200 cursor-pointer" 
+                    : "bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed";
+                const copyAction = hasSlug ? `onclick="copyLink('${p.slug}')"` : "";
+                const copyTitle = hasSlug ? "Copiar Link Amigável" : "Sem link amigável configurado";
+
                 return `
                 <tr class="hover:bg-gray-50 border-b transition">
                     <td class="p-4 flex items-center gap-3">
@@ -271,24 +279,45 @@
                     
                     <td class="p-4 text-right">
                         <div class="flex justify-end gap-2">
+                            
+                            <button ${copyAction} 
+                               class="${copyBtnClass} px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1 border" 
+                               title="${copyTitle}">
+                               🔗 <span class="hidden xl:inline">Link</span>
+                            </button>
+
                             <a href="produto.html?id=${p.id}" target="_blank" 
-                               class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1 border border-gray-200" title="Ver Página">
-                               👁️ Ver
+                               class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1 border border-gray-200" title="Ver Página Real">
+                               👁️ <span class="hidden xl:inline">Ver</span>
                             </a>
 
                             <button onclick='editProduct(${productData})' 
                                class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1 border border-blue-200">
-                               ✏️ Editar
+                               ✏️ <span class="hidden xl:inline">Editar</span>
                             </button>
 
                             <button onclick="deleteProduct('${p.id}')" 
                                class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1 border border-red-200">
-                               🗑️ Excluir
+                               🗑️ <span class="hidden xl:inline">Excluir</span>
                             </button>
                         </div>
                     </td>
                 </tr>
             `}).join('');
+        }
+
+        // --- FUNÇÃO PARA COPIAR O LINK ---
+        function copyLink(slug) {
+            // Monta o link base. Se estiver testando local, pega o localhost. Se estiver online, pega o domínio.
+            const baseUrl = window.location.origin; 
+            const fullLink = `${baseUrl}/go.html?p=${slug}`;
+
+            navigator.clipboard.writeText(fullLink).then(() => {
+                alert("✅ Link copiado: " + fullLink);
+            }).catch(err => {
+                console.error('Erro ao copiar: ', err);
+                prompt("Copie o link manualmente:", fullLink);
+            });
         }
 
         // --- LISTA DE VENDAS E REENVIO ---
