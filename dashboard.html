@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Intelligence | Feltro Fácil</title>
+    <link rel="icon" type="image/png" href="https://tyhiqdrndpchiqkcdidv.supabase.co/storage/v1/object/public/capas/novo_logo.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background-color: #f3f4f6; }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body class="text-gray-700">
+
+    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex items-center justify-center flex-col">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#660066]"></div>
+        <p class="mt-4 text-[#660066] font-bold">Carregando inteligência de dados...</p>
+    </div>
+
+    <div class="flex min-h-screen">
+        
+        <aside class="w-64 bg-[#660066] text-white hidden md:flex flex-col fixed h-full z-10">
+            <div class="p-6 border-b border-purple-800">
+                <h2 class="text-2xl font-bold flex items-center gap-2">
+                    <i class="fas fa-chart-line"></i> Analytics
+                </h2>
+                <p class="text-xs text-purple-200 mt-1">Gestão Inteligente</p>
+            </div>
+            <nav class="flex-1 p-4 space-y-2">
+                <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 bg-white/10 rounded-lg font-bold">
+                    <i class="fas fa-columns w-5"></i> Visão Geral
+                </a>
+                <a href="admin.html" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-lg transition opacity-80 hover:opacity-100">
+                    <i class="fas fa-box-open w-5"></i> Produtos & Links
+                </a>
+                <a href="/" target="_blank" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-lg transition opacity-80 hover:opacity-100">
+                    <i class="fas fa-store w-5"></i> Ver Loja
+                </a>
+            </nav>
+            <div class="p-4 border-t border-purple-800">
+                <button onclick="logout()" class="w-full text-left px-4 py-2 hover:bg-red-500/20 rounded text-red-200 hover:text-white transition flex items-center gap-2">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 md:ml-64 p-8">
+            
+            <div class="md:hidden flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold text-[#660066]">Dashboard</h1>
+                <a href="admin.html" class="text-sm font-bold underline">Ir para Admin</a>
+            </div>
+
+            <header class="flex justify-between items-end mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">Performance da Loja</h1>
+                    <p class="text-gray-500 text-sm mt-1">Última atualização: <span id="last-update">Agora</span></p>
+                </div>
+                <div class="flex gap-2">
+                    <select id="period-filter" onchange="filterData()" class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="all">Todo o Período</option>
+                        <option value="30">Últimos 30 Dias</option>
+                        <option value="7">Últimos 7 Dias</option>
+                    </select>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 card-hover transition duration-300">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Faturamento Total</p>
+                            <h3 class="text-3xl font-bold text-green-600 mt-2" id="kpi-revenue">R$ 0,00</h3>
+                        </div>
+                        <div class="bg-green-50 p-3 rounded-xl text-green-600"><i class="fas fa-dollar-sign text-xl"></i></div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 card-hover transition duration-300">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Vendas Aprovadas</p>
+                            <h3 class="text-3xl font-bold text-[#660066] mt-2" id="kpi-sales">0</h3>
+                        </div>
+                        <div class="bg-purple-50 p-3 rounded-xl text-[#660066]"><i class="fas fa-shopping-bag text-xl"></i></div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 card-hover transition duration-300">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Ticket Médio</p>
+                            <h3 class="text-3xl font-bold text-blue-600 mt-2" id="kpi-ticket">R$ 0,00</h3>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded-xl text-blue-600"><i class="fas fa-chart-bar text-xl"></i></div>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">Valor médio por cliente</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 card-hover transition duration-300">
+                    <div class="flex justify-between items-start">
+                        <div class="overflow-hidden">
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Apostila Top 1</p>
+                            <h3 class="text-lg font-bold text-orange-500 mt-2 truncate" id="kpi-top-prod">...</h3>
+                            <p class="text-xs text-gray-500" id="kpi-top-prod-count">0 vendas</p>
+                        </div>
+                        <div class="bg-orange-50 p-3 rounded-xl text-orange-500"><i class="fas fa-trophy text-xl"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-700 mb-6">Evolução de Vendas</h3>
+                    <div class="relative h-72 w-full">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-700 mb-6">Mix de Produtos</h3>
+                    <div class="relative h-64 w-full flex justify-center">
+                        <canvas id="productsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                        <h3 class="font-bold text-gray-800"><i class="fas fa-crown text-yellow-400 mr-2"></i>Melhores Clientes</h3>
+                        <span class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">Quem mais gastou</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+                                <tr>
+                                    <th class="p-4">Cliente (E-mail)</th>
+                                    <th class="p-4 text-center">Compras</th>
+                                    <th class="p-4 text-right">Total Gasto</th>
+                                </tr>
+                            </thead>
+                            <tbody id="top-customers-body" class="divide-y divide-gray-100 text-sm">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-6 border-b border-gray-100">
+                        <h3 class="font-bold text-gray-800">Transações Recentes</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+                                <tr>
+                                    <th class="p-4">Data</th>
+                                    <th class="p-4">Produto</th>
+                                    <th class="p-4 text-right">Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-sales-body" class="divide-y divide-gray-100 text-sm">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://tyhiqdrndpchiqkcdidv.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5aGlxZHJuZHBjaGlxa2NkaWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0OTU2MzIsImV4cCI6MjA3MjA3MTYzMn0.FCETO8-cPLCGMiw5qYv3_7lSsM6GBAAY914ZXbAhZDY';
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Variáveis globais para gráficos
+        let revenueChartInst = null;
+        let productsChartInst = null;
+        let allSalesData = [];
+
+        // --- 1. AUTENTICAÇÃO ---
+        async function checkAuth() {
+            const { data: { session } } = await client.auth.getSession();
+            if (!session) {
+                window.location.href = 'admin.html'; // Manda pro login se não estiver logado
+            } else {
+                document.getElementById('loading-screen').classList.add('hidden');
+                fetchAnalytics();
+            }
+        }
+
+        // --- 2. BUSCAR DADOS ---
+        async function fetchAnalytics() {
+            // Busca TODAS as vendas aprovadas com o nome do produto
+            const { data: sales, error } = await client
+                .from('sales')
+                .select('*, products(title)')
+                .eq('status', 'approved')
+                .order('created_at', { ascending: true }); // Ordem cronológica para o gráfico
+
+            if (error) { console.error(error); return; }
+            
+            allSalesData = sales;
+            updateDashboard(sales);
+        }
+
+        function filterData() {
+            const days = document.getElementById('period-filter').value;
+            if (days === 'all') {
+                updateDashboard(allSalesData);
+                return;
+            }
+
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
+
+            const filtered = allSalesData.filter(s => new Date(s.created_at) >= cutoffDate);
+            updateDashboard(filtered);
+        }
+
+        // --- 3. ATUALIZAR A TELA ---
+        function updateDashboard(sales) {
+            updateKPIs(sales);
+            renderRevenueChart(sales);
+            renderProductsChart(sales);
+            renderTopCustomers(sales);
+            renderRecentSales(sales);
+        }
+
+        // --- KPIS ---
+        function updateKPIs(sales) {
+            const totalRevenue = sales.reduce((sum, item) => sum + item.amount, 0);
+            const totalSales = sales.length;
+            const ticket = totalSales > 0 ? (totalRevenue / totalSales) : 0;
+
+            // Encontrar produto mais vendido
+            const productCounts = {};
+            sales.forEach(s => {
+                const title = s.products ? s.products.title : 'Deletado';
+                productCounts[title] = (productCounts[title] || 0) + 1;
+            });
+            
+            let topProd = '-';
+            let topCount = 0;
+            for (const [prod, count] of Object.entries(productCounts)) {
+                if (count > topCount) { topProd = prod; topCount = count; }
+            }
+
+            document.getElementById('kpi-revenue').innerText = totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('kpi-sales').innerText = totalSales;
+            document.getElementById('kpi-ticket').innerText = ticket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('kpi-top-prod').innerText = topProd;
+            document.getElementById('kpi-top-prod-count').innerText = `${topCount} vendas`;
+        }
+
+        // --- GRÁFICO DE FATURAMENTO (LINHA) ---
+        function renderRevenueChart(sales) {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            
+            // Agrupar por data (DD/MM)
+            const grouped = {};
+            sales.forEach(s => {
+                const date = new Date(s.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                grouped[date] = (grouped[date] || 0) + s.amount;
+            });
+
+            const labels = Object.keys(grouped);
+            const data = Object.values(grouped);
+
+            if (revenueChartInst) revenueChartInst.destroy();
+
+            revenueChartInst = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Faturamento (R$)',
+                        data: data,
+                        borderColor: '#660066',
+                        backgroundColor: 'rgba(102, 0, 102, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4, // Curva suave
+                        fill: true,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#660066'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        // --- GRÁFICO DE PRODUTOS (ROSCA) ---
+        function renderProductsChart(sales) {
+            const ctx = document.getElementById('productsChart').getContext('2d');
+            
+            const productCounts = {};
+            sales.forEach(s => {
+                const title = s.products ? s.products.title : 'Outros';
+                productCounts[title] = (productCounts[title] || 0) + 1;
+            });
+
+            const labels = Object.keys(productCounts);
+            const data = Object.values(productCounts);
+            
+            // Cores bonitas
+            const colors = ['#660066', '#9333ea', '#c084fc', '#e9d5ff', '#f3e8ff', '#4ade80'];
+
+            if (productsChartInst) productsChartInst.destroy();
+
+            productsChartInst = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { position: 'right', labels: { boxWidth: 10, font: { size: 11 } } } 
+                    }
+                }
+            });
+        }
+
+        // --- RANKING DE CLIENTES ---
+        function renderTopCustomers(sales) {
+            const customers = {};
+            
+            sales.forEach(s => {
+                const email = s.customer_email;
+                if (!customers[email]) customers[email] = { count: 0, total: 0 };
+                customers[email].count++;
+                customers[email].total += s.amount;
+            });
+
+            // Converte para array e ordena
+            const sortedCustomers = Object.entries(customers)
+                .map(([email, data]) => ({ email, ...data }))
+                .sort((a, b) => b.total - a.total)
+                .slice(0, 5); // Pega só os top 5
+
+            const tbody = document.getElementById('top-customers-body');
+            tbody.innerHTML = sortedCustomers.map((c, index) => `
+                <tr class="hover:bg-gray-50 border-b border-gray-50 last:border-0">
+                    <td class="p-4 font-medium text-gray-700">
+                        ${index === 0 ? '👑 ' : ''}${c.email}
+                    </td>
+                    <td class="p-4 text-center">
+                        <span class="bg-purple-100 text-[#660066] px-2 py-1 rounded-full text-xs font-bold">${c.count}</span>
+                    </td>
+                    <td class="p-4 text-right font-bold text-green-600">
+                        R$ ${c.total.toFixed(2).replace('.', ',')}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // --- VENDAS RECENTES (TABELA) ---
+        function renderRecentSales(sales) {
+            // Pega as últimas 5 vendas (invertendo o array que veio cronológico)
+            const recent = [...sales].reverse().slice(0, 5);
+            const tbody = document.getElementById('recent-sales-body');
+            
+            tbody.innerHTML = recent.map(s => `
+                <tr class="border-b border-gray-50 last:border-0">
+                    <td class="p-4 text-gray-500">
+                        ${new Date(s.created_at).toLocaleDateString('pt-BR')}
+                    </td>
+                    <td class="p-4 font-medium text-gray-700">
+                        ${s.products ? s.products.title : 'Produto removido'}
+                    </td>
+                    <td class="p-4 text-right text-gray-700">
+                        R$ ${s.amount.toFixed(2).replace('.', ',')}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function logout() {
+            await client.auth.signOut();
+            window.location.href = 'admin.html';
+        }
+
+        checkAuth();
+    </script>
+</body>
+</html>
