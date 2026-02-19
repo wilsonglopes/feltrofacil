@@ -8,7 +8,8 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -57,17 +58,30 @@
                 <a href="admin.html" class="text-sm font-bold underline">Ir para Admin</a>
             </div>
 
-            <header class="flex justify-between items-end mb-8">
+            <header class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 gap-4">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-800">Performance da Loja</h1>
                     <p class="text-gray-500 text-sm mt-1">Última atualização: <span id="last-update">Agora</span></p>
                 </div>
-                <div class="flex gap-2">
-                    <select id="period-filter" onchange="filterData()" class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                        <option value="all">Todo o Período</option>
-                        <option value="30">Últimos 30 Dias</option>
-                        <option value="7">Últimos 7 Dias</option>
-                    </select>
+                
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-200 flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    <div class="flex flex-col">
+                        <label class="text-xs text-gray-500 font-semibold mb-1 uppercase">Data Inicial</label>
+                        <input type="date" id="date-start" class="text-sm border border-gray-300 rounded px-2 py-1.5 focus:ring-2 focus:ring-[#660066] outline-none">
+                    </div>
+                    <span class="text-gray-400 mt-4">-</span>
+                    <div class="flex flex-col">
+                        <label class="text-xs text-gray-500 font-semibold mb-1 uppercase">Data Final</label>
+                        <input type="date" id="date-end" class="text-sm border border-gray-300 rounded px-2 py-1.5 focus:ring-2 focus:ring-[#660066] outline-none">
+                    </div>
+                    <div class="flex gap-2 mt-4 ml-auto lg:ml-2">
+                        <button onclick="filterByCustomDate()" class="bg-[#660066] hover:bg-[#4d004d] text-white px-4 py-1.5 rounded-lg text-sm font-bold transition flex items-center gap-1 shadow-sm">
+                            <i class="fas fa-filter"></i> Filtrar
+                        </button>
+                        <button onclick="clearFilter()" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg text-sm font-bold transition" title="Limpar Filtro">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -75,7 +89,7 @@
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 card-hover transition duration-300">
                     <div class="flex justify-between items-start">
                         <div>
-                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Faturamento Total</p>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Faturamento</p>
                             <h3 class="text-3xl font-bold text-green-600 mt-2" id="kpi-revenue">R$ 0,00</h3>
                         </div>
                         <div class="bg-green-50 p-3 rounded-xl text-green-600"><i class="fas fa-dollar-sign text-xl"></i></div>
@@ -156,7 +170,7 @@
 
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div class="p-6 border-b border-gray-100">
-                        <h3 class="font-bold text-gray-800">Transações Recentes</h3>
+                        <h3 class="font-bold text-gray-800">Transações no Período</h3>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
@@ -192,7 +206,7 @@
         async function checkAuth() {
             const { data: { session } } = await client.auth.getSession();
             if (!session) {
-                window.location.href = 'admin.html'; // Manda pro login se não estiver logado
+                window.location.href = 'admin.html';
             } else {
                 document.getElementById('loading-screen').classList.add('hidden');
                 fetchAnalytics();
@@ -201,12 +215,11 @@
 
         // --- 2. BUSCAR DADOS ---
         async function fetchAnalytics() {
-            // Busca TODAS as vendas aprovadas com o nome do produto
             const { data: sales, error } = await client
                 .from('sales')
                 .select('*, products(title)')
                 .eq('status', 'approved')
-                .order('created_at', { ascending: true }); // Ordem cronológica para o gráfico
+                .order('created_at', { ascending: true });
 
             if (error) { console.error(error); return; }
             
@@ -214,19 +227,44 @@
             updateDashboard(sales);
         }
 
-        function filterData() {
-            const days = document.getElementById('period-filter').value;
-            if (days === 'all') {
-                updateDashboard(allSalesData);
+        // --- LÓGICA DO FILTRO DE DATAS ---
+        function filterByCustomDate() {
+            const startDateStr = document.getElementById('date-start').value;
+            const endDateStr = document.getElementById('date-end').value;
+
+            if (!startDateStr || !endDateStr) {
+                alert("Por favor, selecione a Data Inicial e a Data Final.");
                 return;
             }
 
-            const cutoffDate = new Date();
-            cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
+            // Converte as strings para objetos Date
+            const startDate = new Date(startDateStr);
+            startDate.setHours(0, 0, 0, 0); // Início do dia inicial
 
-            const filtered = allSalesData.filter(s => new Date(s.created_at) >= cutoffDate);
-            updateDashboard(filtered);
+            const endDate = new Date(endDateStr);
+            endDate.setHours(23, 59, 59, 999); // Fim do dia final
+
+            // Se a data final for menor que a inicial, avisa
+            if (endDate < startDate) {
+                alert("A Data Final não pode ser anterior à Data Inicial.");
+                return;
+            }
+
+            // Filtra o array de vendas
+            const filteredSales = allSalesData.filter(sale => {
+                const saleDate = new Date(sale.created_at);
+                return saleDate >= startDate && saleDate <= endDate;
+            });
+
+            updateDashboard(filteredSales);
         }
+
+        function clearFilter() {
+            document.getElementById('date-start').value = '';
+            document.getElementById('date-end').value = '';
+            updateDashboard(allSalesData);
+        }
+
 
         // --- 3. ATUALIZAR A TELA ---
         function updateDashboard(sales) {
@@ -243,7 +281,6 @@
             const totalSales = sales.length;
             const ticket = totalSales > 0 ? (totalRevenue / totalSales) : 0;
 
-            // Encontrar produto mais vendido
             const productCounts = {};
             sales.forEach(s => {
                 const title = s.products ? s.products.title : 'Deletado';
@@ -267,7 +304,6 @@
         function renderRevenueChart(sales) {
             const ctx = document.getElementById('revenueChart').getContext('2d');
             
-            // Agrupar por data (DD/MM)
             const grouped = {};
             sales.forEach(s => {
                 const date = new Date(s.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
@@ -279,6 +315,12 @@
 
             if (revenueChartInst) revenueChartInst.destroy();
 
+            // Se não houver dados, cria um gráfico vazio com aviso
+            if (labels.length === 0) {
+                labels.push("Sem dados no período");
+                data.push(0);
+            }
+
             revenueChartInst = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -289,7 +331,7 @@
                         borderColor: '#660066',
                         backgroundColor: 'rgba(102, 0, 102, 0.1)',
                         borderWidth: 2,
-                        tension: 0.4, // Curva suave
+                        tension: 0.4,
                         fill: true,
                         pointBackgroundColor: '#fff',
                         pointBorderColor: '#660066'
@@ -317,7 +359,6 @@
             const labels = Object.keys(productCounts);
             const data = Object.values(productCounts);
             
-            // Cores bonitas
             const colors = ['#660066', '#9333ea', '#c084fc', '#e9d5ff', '#f3e8ff', '#4ade80'];
 
             if (productsChartInst) productsChartInst.destroy();
@@ -325,10 +366,10 @@
             productsChartInst = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: labels,
+                    labels: labels.length > 0 ? labels : ["Sem vendas"],
                     datasets: [{
-                        data: data,
-                        backgroundColor: colors,
+                        data: data.length > 0 ? data : [1],
+                        backgroundColor: data.length > 0 ? colors : ['#e5e7eb'],
                         borderWidth: 0
                     }]
                 },
@@ -353,13 +394,18 @@
                 customers[email].total += s.amount;
             });
 
-            // Converte para array e ordena
             const sortedCustomers = Object.entries(customers)
                 .map(([email, data]) => ({ email, ...data }))
                 .sort((a, b) => b.total - a.total)
-                .slice(0, 5); // Pega só os top 5
+                .slice(0, 5);
 
             const tbody = document.getElementById('top-customers-body');
+            
+            if (sortedCustomers.length === 0) {
+                 tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-400">Nenhum dado no período selecionado.</td></tr>';
+                 return;
+            }
+
             tbody.innerHTML = sortedCustomers.map((c, index) => `
                 <tr class="hover:bg-gray-50 border-b border-gray-50 last:border-0">
                     <td class="p-4 font-medium text-gray-700">
@@ -377,10 +423,14 @@
 
         // --- VENDAS RECENTES (TABELA) ---
         function renderRecentSales(sales) {
-            // Pega as últimas 5 vendas (invertendo o array que veio cronológico)
-            const recent = [...sales].reverse().slice(0, 5);
+            const recent = [...sales].reverse().slice(0, 10); // Mostra até as 10 últimas do período
             const tbody = document.getElementById('recent-sales-body');
             
+             if (recent.length === 0) {
+                 tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-400">Nenhuma venda no período.</td></tr>';
+                 return;
+            }
+
             tbody.innerHTML = recent.map(s => `
                 <tr class="border-b border-gray-50 last:border-0">
                     <td class="p-4 text-gray-500">
