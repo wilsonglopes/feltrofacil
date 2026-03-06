@@ -46,38 +46,42 @@
 
         <div class="container mx-auto p-6 max-w-6xl">
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500">
-                    <p class="text-gray-500 text-sm font-semibold uppercase">Faturamento Total</p>
+                    <p class="text-gray-500 text-sm font-semibold uppercase">Faturamento</p>
                     <h3 class="text-3xl font-bold text-gray-800 mt-2" id="stat-revenue">R$ 0,00</h3>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
                     <p class="text-gray-500 text-sm font-semibold uppercase">Vendas Aprovadas</p>
                     <h3 class="text-3xl font-bold text-gray-800 mt-2" id="stat-sales">0</h3>
                 </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-500">
+                    <p class="text-gray-500 text-sm font-semibold uppercase">Cliques</p>
+                    <h3 class="text-3xl font-bold text-gray-800 mt-2" id="stat-clicks">0</h3>
+                </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-orange-500">
-                    <p class="text-gray-500 text-sm font-semibold uppercase">Abandonos (Recuperar)</p>
+                    <p class="text-gray-500 text-sm font-semibold uppercase">Abandonos (Leads)</p>
                     <h3 class="text-3xl font-bold text-gray-800 mt-2" id="stat-abandoned">0</h3>
                 </div>
             </div>
 
-            <div class="bg-orange-50 border border-orange-200 p-6 rounded-xl shadow-sm mb-10">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold text-orange-800 flex items-center gap-2">🛒 Carrinhos Abandonados</h2>
-                    <button onclick="loadAbandonedCarts()" class="text-sm text-orange-600 hover:underline">Atualizar</button>
-                </div>
-                <div class="overflow-x-auto bg-white rounded-lg border border-orange-100">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-orange-800 flex items-center gap-2">🛒 Recuperação de Carrinhos</h2>
+                <button onclick="loadAbandonedCarts()" class="text-sm text-orange-600 hover:underline">Atualizar Lista</button>
+            </div>
+            <div class="bg-orange-50 rounded-xl shadow-sm border border-orange-200 mb-12 overflow-hidden">
+                <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-orange-100 text-orange-800 uppercase text-xs tracking-wider">
                             <tr>
-                                <th class="p-3 border-b">Data</th>
-                                <th class="p-3 border-b">Cliente</th>
-                                <th class="p-3 border-b">Contato</th>
-                                <th class="p-3 border-b text-right">Ação</th>
+                                <th class="p-4 border-b border-orange-200">Data</th>
+                                <th class="p-4 border-b border-orange-200">Cliente</th>
+                                <th class="p-4 border-b border-orange-200">Contato</th>
+                                <th class="p-4 border-b border-orange-200 text-right">Ações</th>
                             </tr>
                         </thead>
-                        <tbody id="abandoned-table-body" class="divide-y divide-gray-100 text-sm">
-                            <tr><td colspan="4" class="p-4 text-center text-gray-500">Carregando dados...</td></tr>
+                        <tbody id="abandoned-table-body" class="divide-y divide-orange-200/50 bg-white/50 text-sm">
+                            <tr><td colspan="4" class="p-8 text-center text-gray-500">Carregando dados...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -286,7 +290,7 @@
         // --- LÓGICA DE CARRINHOS ABANDONADOS ---
         async function loadAbandonedCarts() {
             const tbody = document.getElementById('abandoned-table-body');
-            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center">Buscando dados...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">Buscando dados...</td></tr>';
 
             // 1. Pega todas as tentativas de compra da tabela nova
             const { data: attempts } = await adminClient.from('checkout_attempts').select('*').order('created_at', { ascending: false });
@@ -295,7 +299,7 @@
             const { data: sales } = await adminClient.from('sales').select('customer_email').eq('status', 'approved');
             
             if (!attempts || attempts.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">Nenhum carrinho abandonado! 🎉</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">Ainda não há tentativas registradas.</td></tr>';
                 document.getElementById('stat-abandoned').innerText = "0";
                 return;
             }
@@ -315,7 +319,7 @@
             document.getElementById('stat-abandoned').innerText = abandonedList.length;
 
             if (abandonedList.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">Todos que tentaram, compraram! 🎉</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">Todos que tentaram, finalizaram a compra! 🎉</td></tr>';
                 return;
             }
 
@@ -323,14 +327,21 @@
                 const date = new Date(a.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit' });
                 const phone = a.phone ? a.phone.replace(/\D/g, '') : '';
                 const msg = encodeURIComponent(`Olá ${a.name || ''}, vi que você tentou adquirir nossas apostilas na Feltro Fácil mas não conseguiu finalizar. Posso te ajudar com alguma dúvida?`);
-                const zapLink = phone ? `<a href="https://wa.me/55${phone}?text=${msg}" target="_blank" class="bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1.5 rounded-full text-xs font-bold transition">📲 Chamar no WhatsApp</a>` : '<span class="text-xs text-gray-400">Sem telefone</span>';
+                
+                // Botão de WhatsApp
+                const zapLink = phone 
+                    ? `<a href="https://wa.me/55${phone}?text=${msg}" target="_blank" class="bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 w-max ml-auto shadow-sm">📲 Chamar</a>` 
+                    : '<span class="text-xs text-gray-400">Sem telefone</span>';
 
                 return `
-                    <tr class="hover:bg-orange-50 border-b border-orange-50 text-sm transition">
-                        <td class="p-3 text-gray-500">${date}</td>
-                        <td class="p-3"><p class="font-bold text-gray-800">${a.name || 'Sem nome'}</p><p class="text-xs text-gray-500">${a.product_details}</p></td>
-                        <td class="p-3 text-gray-600">${a.email}<br><span class="text-xs">${a.phone || ''}</span></td>
-                        <td class="p-3 text-right">${zapLink}</td>
+                    <tr class="hover:bg-white transition border-b border-orange-100 last:border-0">
+                        <td class="p-4 text-gray-500">${date}</td>
+                        <td class="p-4">
+                            <p class="font-bold text-gray-800">${a.name || 'Sem nome'}</p>
+                            <p class="text-xs text-gray-500 max-w-[200px] truncate" title="${a.product_details}">${a.product_details || 'Produto não listado'}</p>
+                        </td>
+                        <td class="p-4 text-gray-600">${a.email}<br><span class="text-xs font-medium text-gray-500">${a.phone || ''}</span></td>
+                        <td class="p-4 text-right">${zapLink}</td>
                     </tr>
                 `;
             }).join('');
@@ -348,9 +359,10 @@
 
             let totalRevenue = 0;
             let totalSalesCount = sales ? sales.length : 0;
+            let totalClicksCount = clicks ? clicks.length : 0;
 
             const stats = {};
-            products.forEach(p => { stats[p.id] = { sales: 0, revenue: 0 }; });
+            products.forEach(p => { stats[p.id] = { sales: 0, revenue: 0, clicks: 0 }; });
 
             if(sales) sales.forEach(s => {
                 if (stats[s.product_id]) {
@@ -360,8 +372,13 @@
                 }
             });
 
+            if (clicks) clicks.forEach(c => {
+                if (stats[c.product_id]) stats[c.product_id].clicks++;
+            });
+
             document.getElementById('stat-revenue').innerText = totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             document.getElementById('stat-sales').innerText = totalSalesCount;
+            document.getElementById('stat-clicks').innerText = totalClicksCount;
 
             tbody.innerHTML = products.map(p => {
                 const s = stats[p.id];
@@ -412,7 +429,6 @@
             `}).join('');
         }
 
-        // --- FUNÇÃO PARA COPIAR O LINK ---
         function copyLink(slug) {
             const baseUrl = window.location.origin; 
             const fullLink = `${baseUrl}/go.html?p=${slug}`;
@@ -473,6 +489,7 @@
                     document.getElementById('manual-sale-modal').classList.remove('flex');
                     loadSalesData(); 
                     loadData(); 
+                    loadAbandonedCarts(); // Opcional, mas bom para atualizar a lista
                 } else {
                     const err = await response.json();
                     throw new Error(err.error || "Erro desconhecido");
