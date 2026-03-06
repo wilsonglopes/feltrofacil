@@ -55,9 +55,31 @@
                     <p class="text-gray-500 text-sm font-semibold uppercase">Vendas Aprovadas</p>
                     <h3 class="text-3xl font-bold text-gray-800 mt-2" id="stat-sales">0</h3>
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-500">
-                    <p class="text-gray-500 text-sm font-semibold uppercase">Interesse (Cliques)</p>
-                    <h3 class="text-3xl font-bold text-gray-800 mt-2" id="stat-clicks">0</h3>
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-orange-500">
+                    <p class="text-gray-500 text-sm font-semibold uppercase">Abandonos (Recuperar)</p>
+                    <h3 class="text-3xl font-bold text-gray-800 mt-2" id="stat-abandoned">0</h3>
+                </div>
+            </div>
+
+            <div class="bg-orange-50 border border-orange-200 p-6 rounded-xl shadow-sm mb-10">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-orange-800 flex items-center gap-2">🛒 Carrinhos Abandonados</h2>
+                    <button onclick="loadAbandonedCarts()" class="text-sm text-orange-600 hover:underline">Atualizar</button>
+                </div>
+                <div class="overflow-x-auto bg-white rounded-lg border border-orange-100">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-orange-100 text-orange-800 uppercase text-xs tracking-wider">
+                            <tr>
+                                <th class="p-3 border-b">Data</th>
+                                <th class="p-3 border-b">Cliente</th>
+                                <th class="p-3 border-b">Contato</th>
+                                <th class="p-3 border-b text-right">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="abandoned-table-body" class="divide-y divide-gray-100 text-sm">
+                            <tr><td colspan="4" class="p-4 text-center text-gray-500">Carregando dados...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -226,7 +248,7 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5aGlxZHJuZHBjaGlxa2NkaWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0OTU2MzIsImV4cCI6MjA3MjA3MTYzMn0.FCETO8-cPLCGMiw5qYv3_7lSsM6GBAAY914ZXbAhZDY';
         
         const adminClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        let allProductsCache = []; // Variável Global para guardar produtos para a venda manual
+        let allProductsCache = [];
 
         async function checkSession() {
             const { data: { session } } = await adminClient.auth.getSession();
@@ -252,6 +274,7 @@
             document.getElementById('dashboard-screen').classList.remove('hidden');
             loadData();
             loadSalesData();
+            loadAbandonedCarts(); // CARREGA CARRINHOS ABANDONADOS
             loadPopupSettings();
         }
 
@@ -260,22 +283,74 @@
             window.location.reload();
         }
 
+        // --- LÓGICA DE CARRINHOS ABANDONADOS ---
+        async function loadAbandonedCarts() {
+            const tbody = document.getElementById('abandoned-table-body');
+            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center">Buscando dados...</td></tr>';
+
+            // 1. Pega todas as tentativas de compra da tabela nova
+            const { data: attempts } = await adminClient.from('checkout_attempts').select('*').order('created_at', { ascending: false });
+            
+            // 2. Pega emails de quem finalizou a compra
+            const { data: sales } = await adminClient.from('sales').select('customer_email').eq('status', 'approved');
+            
+            if (!attempts || attempts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">Nenhum carrinho abandonado! 🎉</td></tr>';
+                document.getElementById('stat-abandoned').innerText = "0";
+                return;
+            }
+
+            const salesEmails = sales ? sales.map(s => s.customer_email.toLowerCase()) : [];
+            
+            // 3. Filtra quem tentou mas NÃO está na lista de quem comprou
+            const abandonedMap = {};
+            attempts.forEach(a => {
+                if(a.email && !salesEmails.includes(a.email.toLowerCase())) {
+                    // Mantém apenas a tentativa mais recente de cada email
+                    if (!abandonedMap[a.email]) abandonedMap[a.email] = a;
+                }
+            });
+
+            const abandonedList = Object.values(abandonedMap);
+            document.getElementById('stat-abandoned').innerText = abandonedList.length;
+
+            if (abandonedList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">Todos que tentaram, compraram! 🎉</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = abandonedList.map(a => {
+                const date = new Date(a.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit' });
+                const phone = a.phone ? a.phone.replace(/\D/g, '') : '';
+                const msg = encodeURIComponent(`Olá ${a.name || ''}, vi que você tentou adquirir nossas apostilas na Feltro Fácil mas não conseguiu finalizar. Posso te ajudar com alguma dúvida?`);
+                const zapLink = phone ? `<a href="https://wa.me/55${phone}?text=${msg}" target="_blank" class="bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1.5 rounded-full text-xs font-bold transition">📲 Chamar no WhatsApp</a>` : '<span class="text-xs text-gray-400">Sem telefone</span>';
+
+                return `
+                    <tr class="hover:bg-orange-50 border-b border-orange-50 text-sm transition">
+                        <td class="p-3 text-gray-500">${date}</td>
+                        <td class="p-3"><p class="font-bold text-gray-800">${a.name || 'Sem nome'}</p><p class="text-xs text-gray-500">${a.product_details}</p></td>
+                        <td class="p-3 text-gray-600">${a.email}<br><span class="text-xs">${a.phone || ''}</span></td>
+                        <td class="p-3 text-right">${zapLink}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
         // --- DASHBOARD GERAL ---
         async function loadData() {
             const tbody = document.getElementById('products-table-body');
             const { data: products } = await adminClient.from('products').select('*').order('created_at', { ascending: false });
             
-            allProductsCache = products; // Salva na memória para usar no modal de Venda Manual
+            allProductsCache = products;
 
             const { data: sales } = await adminClient.from('sales').select('product_id, amount').eq('status', 'approved');
             const { data: clicks } = await adminClient.from('clicks').select('product_id');
 
             let totalRevenue = 0;
             let totalSalesCount = sales ? sales.length : 0;
-            let totalClicksCount = clicks ? clicks.length : 0;
 
             const stats = {};
-            products.forEach(p => { stats[p.id] = { sales: 0, revenue: 0, clicks: 0 }; });
+            products.forEach(p => { stats[p.id] = { sales: 0, revenue: 0 }; });
 
             if(sales) sales.forEach(s => {
                 if (stats[s.product_id]) {
@@ -285,19 +360,13 @@
                 }
             });
 
-            if (clicks) clicks.forEach(c => {
-                if (stats[c.product_id]) stats[c.product_id].clicks++;
-            });
-
             document.getElementById('stat-revenue').innerText = totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             document.getElementById('stat-sales').innerText = totalSalesCount;
-            document.getElementById('stat-clicks').innerText = totalClicksCount;
 
             tbody.innerHTML = products.map(p => {
                 const s = stats[p.id];
                 const productData = JSON.stringify(p).replace(/'/g, "&#39;");
                 
-                // Lógica do Link Amigável
                 const hasSlug = p.slug && p.slug.trim() !== '';
                 const copyBtnClass = hasSlug 
                     ? "bg-purple-100 hover:bg-purple-200 text-purple-700 border-purple-200 cursor-pointer" 
@@ -355,11 +424,9 @@
             });
         }
 
-        // --- LÓGICA DE VENDA MANUAL (NOVA) ---
+        // --- LÓGICA DE VENDA MANUAL ---
         function openManualSaleModal() {
             const container = document.getElementById('manual-products-list');
-            
-            // Popula a lista de produtos com Checkboxes
             container.innerHTML = allProductsCache.map(p => `
                 <div class="flex items-center gap-3 p-2 hover:bg-green-50 rounded cursor-pointer border border-transparent hover:border-green-200 transition">
                     <input type="checkbox" name="manual_product" value="${p.id}" id="chk_${p.id}" class="w-5 h-5 accent-green-600 cursor-pointer">
@@ -383,7 +450,6 @@
             btn.disabled = true;
 
             const email = document.getElementById('manual-email').value;
-            // Pega todos os produtos marcados
             const checkboxes = document.querySelectorAll('input[name="manual_product"]:checked');
             const productIds = Array.from(checkboxes).map(cb => cb.value);
 
@@ -395,7 +461,6 @@
             }
 
             try {
-                // Chama a nova função do backend
                 const response = await fetch('/.netlify/functions/manual-sale', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -406,8 +471,8 @@
                     alert("✅ Venda registrada e e-mail enviado com sucesso!");
                     document.getElementById('manual-sale-modal').classList.add('hidden');
                     document.getElementById('manual-sale-modal').classList.remove('flex');
-                    loadSalesData(); // Atualiza a tabela de vendas
-                    loadData(); // Atualiza os contadores
+                    loadSalesData(); 
+                    loadData(); 
                 } else {
                     const err = await response.json();
                     throw new Error(err.error || "Erro desconhecido");
@@ -439,8 +504,6 @@
 
             tbody.innerHTML = sales.map(sale => {
                 const date = new Date(sale.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
-                
-                // Identifica se foi venda Manual
                 const isManual = sale.payment_method === 'manual_pix';
                 const methodBadge = isManual 
                     ? '<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold border border-green-200">Manual (Pix)</span>'
@@ -493,10 +556,7 @@
                 document.getElementById('prod-price').value = product.price;
                 document.getElementById('prod-desc').value = product.description || '';
                 document.getElementById('prod-details').value = product.detailed_description || '';
-                
-                // CARREGA O SLUG
                 document.getElementById('prod-slug').value = product.slug || '';
-                
                 document.getElementById('current-cover-text').innerText = 'Imagem atual mantida';
                 document.getElementById('current-pdf-text').innerText = 'PDF/ZIP atual mantido';
                 
@@ -529,18 +589,14 @@
                 const price = document.getElementById('prod-price').value;
                 const description = document.getElementById('prod-desc').value;
                 const detailed_description = document.getElementById('prod-details').value;
-                
-                // PEGA O VALOR DO SLUG
                 const slug = document.getElementById('prod-slug').value || null;
 
                 const coverFile = document.getElementById('prod-cover').files[0];
                 const pdfFile = document.getElementById('prod-pdf').files[0];
                 const galleryFiles = document.getElementById('prod-gallery').files;
 
-                // INCLUI SLUG NO OBJETO DE ATUALIZAÇÃO
                 let updates = { title, price, description, detailed_description, slug };
 
-                // 1. CAPA
                 if (coverFile) {
                     const fileName = coverFile.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_');
                     const { error } = await adminClient.storage.from('capas').upload(fileName, coverFile, { upsert: true });
@@ -549,7 +605,6 @@
                     updates.cover_image = publicUrl;
                 }
 
-                // 2. ARQUIVO (PDF/ZIP)
                 if (pdfFile) {
                     const cleanName = pdfFile.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_');
                     const { error } = await adminClient.storage.from('apostilas').upload(cleanName, pdfFile, { upsert: true });
@@ -557,7 +612,6 @@
                     updates.pdf_filename = cleanName;
                 }
 
-                // 3. GALERIA (VÁRIAS FOTOS)
                 if (galleryFiles.length > 0) {
                     let galleryUrls = [];
                     for (const file of galleryFiles) {
@@ -571,7 +625,6 @@
                     updates.gallery = galleryUrls;
                 }
 
-                // SALVAR NO BANCO
                 if (id) {
                     const { error } = await adminClient.from('products').update(updates).eq('id', id);
                     if (error) throw error;
